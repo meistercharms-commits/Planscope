@@ -3,12 +3,29 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { LogOut, Plus, Menu, X, User, Settings, Calendar } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PlanscopeLogo from "@/components/ui/PlanscopeLogo";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Configure native status bar so WebView sits below it (not behind)
+  useEffect(() => {
+    async function configureStatusBar() {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform()) return;
+
+        const { StatusBar, Style } = await import("@capacitor/status-bar");
+        await StatusBar.setOverlaysWebView({ overlay: false });
+        await StatusBar.setStyle({ style: Style.Light });
+      } catch {
+        // Not running in Capacitor — ignore
+      }
+    }
+    configureStatusBar();
+  }, []);
 
   if (loading) {
     return (
@@ -42,9 +59,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="bg-bg-card/80 backdrop-blur-md border-b border-border/60 h-14 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
+      <header className="sticky top-0 bg-bg-card border-b border-border/60 h-14 flex items-center justify-between px-4 sm:px-6 z-40">
         <Link
-          href={isLoggedIn ? "/dashboard" : "/new-plan"}
+          href="/dashboard"
           className="flex items-center hover:opacity-80 transition-opacity"
         >
           <img

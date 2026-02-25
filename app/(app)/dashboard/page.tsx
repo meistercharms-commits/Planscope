@@ -1,12 +1,31 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getUserTier, canHaveMultipleActivePlans } from "@/lib/tiers";
 import DashboardMultiPlan from "./DashboardMultiPlan";
 
 export default async function DashboardPage() {
-  const auth = await getCurrentUser();
-  if (!auth) redirect("/new-plan");
+  // Check for existing auth — don't create anon user here (can't set cookies in Server Components)
+  const loggedIn = await getCurrentUser();
+  let userId: string;
+
+  if (loggedIn) {
+    userId = loggedIn.userId;
+  } else {
+    // Check for existing anon cookie without creating one
+    const cookieStore = await cookies();
+    const anonId = cookieStore.get("planscope_anon")?.value;
+    if (!anonId) redirect("/new-plan");
+
+    const anonUser = await prisma.user.findFirst({
+      where: { email: `anon-${anonId}@planscope.local` },
+    });
+    if (!anonUser) redirect("/new-plan");
+    userId = anonUser.id;
+  }
+
+  const auth = { userId };
 
   const tier = await getUserTier(auth.userId);
 

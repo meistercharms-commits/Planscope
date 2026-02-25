@@ -23,6 +23,12 @@ export const metadata: Metadata = {
   title: "Planscope - Real plans for real people",
   description:
     "AI-powered planning that helps you decide what matters this week. Brain dump your tasks, get a realistic plan.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({

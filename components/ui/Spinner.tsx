@@ -52,7 +52,7 @@ export default function Spinner({
   }, [progress, statusMessages]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+    <div className="flex flex-col items-center min-h-[60vh] gap-6 pt-32">
       <PlanscopeLogo size={88} progress={progress} />
 
       <div className="text-center space-y-2">

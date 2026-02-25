@@ -21,24 +21,26 @@ export default function SegmentedControl({
   value,
   onChange,
 }: SegmentedControlProps) {
+  const compact = options.length >= 5;
+
   return (
     <div className="space-y-2">
       {label && (
         <label className="block text-sm font-medium text-text">{label}</label>
       )}
-      <div className="flex gap-2 flex-wrap">
+      <div className={compact ? "grid grid-cols-5 gap-1.5" : "flex gap-2"}>
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 cursor-pointer border ${
+            className={`${compact ? "" : "flex-1"} flex items-center justify-center gap-2 ${compact ? "px-1 py-2.5 text-xs" : "px-2 py-2.5 text-sm"} rounded-full font-medium transition-all duration-200 cursor-pointer border ${
               value === option.value
-                ? "bg-primary-light text-primary border-primary"
-                : "bg-white text-text-secondary border-border hover:text-text hover:border-text-secondary"
+                ? "bg-primary-light text-primary border-primary shadow-sm"
+                : "bg-white text-text-secondary border-border/60 shadow-sm hover:text-text hover:border-text-secondary hover:shadow"
             }`}
           >
-            {option.icon && (
+            {option.icon && !compact && (
               <span className="flex-shrink-0 w-4 h-4">
                 {typeof option.icon === 'string' ? (
                   <img src={option.icon} alt="" className="w-full h-full" />

@@ -134,6 +134,55 @@ export default function PlanProgressPage({
     }
   }
 
+  async function promoteParkedTask(taskId: string) {
+    if (!plan) return;
+
+    const task = plan.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    // Optimistic update
+    setPlan({
+      ...plan,
+      tasks: plan.tasks.map((t) =>
+        t.id === taskId ? { ...t, section: "this_week" } : t
+      ),
+    });
+    setAddingTask(false);
+
+    try {
+      const res = await fetch(`/api/plans/${id}/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "this_week" }),
+      });
+
+      if (res.status === 403) {
+        // Revert
+        setPlan({
+          ...plan,
+          tasks: plan.tasks.map((t) =>
+            t.id === taskId ? { ...t, section: "not_this_week" } : t
+          ),
+        });
+        showToast("Your plan is full. Pick what matters.");
+        return;
+      }
+
+      if (res.ok) {
+        showToast("Moved to this week");
+      }
+    } catch {
+      // Revert
+      setPlan({
+        ...plan,
+        tasks: plan.tasks.map((t) =>
+          t.id === taskId ? { ...t, section: "not_this_week" } : t
+        ),
+      });
+      showToast("Couldn't move task. Try again.", "error");
+    }
+  }
+
   async function addTask() {
     if (!newTaskTitle.trim() || !plan) return;
 
@@ -366,25 +415,55 @@ export default function PlanProgressPage({
           </Button>
 
           {addingTask ? (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="What needs doing?"
-                className="flex-1 px-4 py-3 border border-transparent rounded-lg text-sm bg-bg-subtle transition-all duration-200 focus:outline-none focus:bg-bg-card focus:border-border focus:ring-2 focus:ring-primary-light focus:shadow-sm"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addTask();
-                  if (e.key === "Escape") {
-                    setAddingTask(false);
-                    setNewTaskTitle("");
-                  }
-                }}
-                autoFocus
-              />
-              <Button onClick={addTask} disabled={!newTaskTitle.trim()}>
-                Add
-              </Button>
+            <div className="space-y-3">
+              {/* Show parked items to promote first */}
+              {notThisWeek.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-text-secondary mb-2">
+                    Pick from parked
+                  </p>
+                  <div className="space-y-2">
+                    {notThisWeek.map((task) => (
+                      <button
+                        key={task.id}
+                        onClick={() => promoteParkedTask(task.id)}
+                        className="w-full flex items-center gap-3 p-3 rounded-lg bg-bg-card border border-border/60 shadow-sm hover:border-primary/40 hover:shadow transition-all text-left cursor-pointer"
+                      >
+                        <Plus size={16} className="text-primary flex-shrink-0" />
+                        <span className="text-sm text-text">{task.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="relative my-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-bg px-3 text-xs text-text-tertiary">or add new</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="What needs doing?"
+                  className="flex-1 px-4 py-3 border border-transparent rounded-lg text-base bg-bg-subtle transition-all duration-200 focus:outline-none focus:bg-bg-card focus:border-border focus:ring-2 focus:ring-primary-light focus:shadow-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addTask();
+                    if (e.key === "Escape") {
+                      setAddingTask(false);
+                      setNewTaskTitle("");
+                    }
+                  }}
+                  autoFocus={notThisWeek.length === 0}
+                />
+                <Button onClick={addTask} disabled={!newTaskTitle.trim()}>
+                  Add
+                </Button>
+              </div>
             </div>
           ) : totalActive >= 7 ? (
             <div className="text-center py-3">

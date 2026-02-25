@@ -246,23 +246,32 @@ export default function NewPlanPage() {
           {/* Brain Dump */}
           {!useCopy && (
             <div>
+              <p className="text-sm font-medium text-text-secondary mb-2">
+                Just type, no formatting needed
+              </p>
               <Textarea
                 placeholder="Finish Q2 proposal. Call client about scope change. Code review for team backend. Update project docs. Prep for 1:1s. Should really exercise this week..."
                 value={dump}
                 onChange={(e) => setDump(e.target.value)}
-                className="min-h-[180px] sm:min-h-[220px]"
+                className="min-h-[200px] sm:min-h-[240px]"
                 required={!useCopy}
               />
-              <p className="text-xs text-text-tertiary mt-1.5 text-right">
-                {dump.length} characters{" "}
-                {dump.length < 20 && dump.length > 0 && "(need at least 20)"}
-              </p>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-xs text-text-tertiary">
+                  {dump.length < 20 && dump.length > 0
+                    ? `${20 - dump.length} more characters needed`
+                    : "\u00A0"}
+                </p>
+                <p className="text-xs text-text-tertiary">
+                  {dump.length > 0 ? `${dump.length} characters` : ""}
+                </p>
+              </div>
             </div>
           )}
 
           {/* Constraints */}
           <SegmentedControl
-            label={`Time ${mode === "today" ? "today" : "this week"}`}
+            label="Time available"
             options={[
               { value: "low", label: "Low", icon: "/icons/low_time.svg" },
               { value: "medium", label: "Medium", icon: "/icons/medium_time.svg" },

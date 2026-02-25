@@ -2,10 +2,11 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { ArrowLeft } from "lucide-react";
 
 const oauthErrors: Record<string, string> = {
   google_denied: "Google sign-in was cancelled.",
@@ -18,6 +19,7 @@ const oauthErrors: Record<string, string> = {
 
 function LoginForm() {
   const { login } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get("error");
   const [email, setEmail] = useState("");
@@ -41,6 +43,14 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm animate-fade-in">
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors mb-6"
+      >
+        <ArrowLeft size={16} />
+        Back
+      </button>
+
       <div className="mb-8">
         <img
           src="/logo-wordmark-tagline.svg"
@@ -63,7 +73,7 @@ function LoginForm() {
       <div className="space-y-3 mb-6">
         <a
           href="/api/auth/google"
-          className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-bg-card border border-border rounded-lg text-sm font-medium text-text hover:bg-bg-subtle transition-colors"
+          className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-white border border-border/60 rounded-lg shadow-sm text-sm font-medium text-text hover:shadow hover:bg-bg-subtle transition-all"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -76,7 +86,7 @@ function LoginForm() {
 
         <a
           href="/api/auth/apple"
-          className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-bg-card border border-border rounded-lg text-sm font-medium text-text hover:bg-bg-subtle transition-colors"
+          className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-white border border-border/60 rounded-lg shadow-sm text-sm font-medium text-text hover:shadow hover:bg-bg-subtle transition-all"
         >
           <svg width="16" height="20" viewBox="0 0 16 20" xmlns="http://www.w3.org/2000/svg">
             <path d="M15.17 15.69c-.34.79-.5 1.14-.88 1.84-.53.87-1.27 1.95-2.2 1.96-.91.01-1.15-.59-2.39-.59-1.24.01-1.5.6-2.41.6-.93 0-1.63-.99-2.16-1.86C3.59 15.04 2.81 11.77 4.31 9.6c.76-1.03 1.87-1.65 2.94-1.65 1.15-.02 1.8.77 2.72.77.92 0 1.47-.77 2.79-.75.48 0 1.81.19 2.67 1.44-.07.04-1.59.93-1.57 2.76.02 2.2 1.93 2.93 1.95 2.94-.02.05-.3 1.05-1.64 2.58zM11.2.4c-1.44.06-3.1.95-3.77 2.14-.6 1.06-.88 2.44-.6 3.72 1.55.05 3.17-.9 3.78-2.07.57-1.08.77-2.39.59-3.79z" fill="currentColor"/>

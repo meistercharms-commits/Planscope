@@ -43,5 +43,13 @@ next-env.d.ts
 # database
 *.db
 
+# capacitor native build artefacts
+ios/App/Pods/
+ios/DerivedData/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+
 # claude code
 .claude/

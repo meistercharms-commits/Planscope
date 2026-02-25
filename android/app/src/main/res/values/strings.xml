@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Planscope</string>
+    <string name="title_activity_main">Planscope</string>
+    <string name="package_name">co.planscope.app</string>
+    <string name="custom_url_scheme">co.planscope.app</string>
+</resources>

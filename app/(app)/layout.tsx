@@ -12,9 +12,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
-        <PlanscopeLogo size={48} />
-        <div className="text-xl font-semibold text-text font-display">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <style>{`
+          @keyframes fillCircle {
+            0% { clip-path: polygon(50% 50%, 50% 0%, 50% 0%); }
+            25% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%); }
+            50% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%); }
+            75% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 50%); }
+            100% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%); }
+          }
+          .loading-logo {
+            animation: fillCircle 2s ease-in-out infinite;
+          }
+        `}</style>
+        <img
+          src="/logo-circle-outline-primary.svg"
+          alt="Loading"
+          className="loading-logo w-16 h-16"
+        />
+        <div className="text-lg font-semibold text-text font-display">
           Planscope
         </div>
       </div>

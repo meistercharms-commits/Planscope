@@ -105,11 +105,11 @@ export default function PlanProgressPage({
       let msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];
 
       if (completionPercent === 50) {
-        msg = "🔥 Halfway there! Keep the momentum going!";
+        msg = "Halfway there. Keep it going.";
       } else if (completionPercent === 75) {
-        msg = "🚀 75% done! You're crushing it!";
+        msg = "Nearly done. You're in the home stretch.";
       } else if (completionPercent === 100) {
-        msg = "🎉 You did it! All tasks complete!";
+        msg = "All done. Great work.";
       }
 
       showToast(msg);

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Calendar, TrendingUp, Lock } from "lucide-react";
+import { Calendar, TrendingUp, Lock, Zap, Target } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
+import StatsCard from "@/components/ui/StatsCard";
 import { useAuth } from "@/lib/useAuth";
 
 interface PlanHistoryItem {
@@ -85,31 +86,45 @@ export default function HistoryPage() {
         )
       : 0;
 
+  const totalTasksCompleted = plans.reduce((sum, p) => sum + p.completedTasks, 0);
+  const totalTasksPlanned = plans.reduce((sum, p) => sum + p.totalTasks, 0);
+  const bestWeek = totalPlans > 0 ? Math.max(...plans.map(p => p.completionRate)) : 0;
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
       <h1 className="text-[28px] font-bold text-text font-display mb-2">
         Plan History
       </h1>
       <p className="text-sm text-text-secondary mb-6">
-        {totalPlans} plans created. Average completion: {avgCompletion}%.
+        {totalPlans} plans created. {totalTasksCompleted} tasks completed.
       </p>
 
-      {/* Stats summary */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-bg-card rounded-lg shadow-card p-4 text-center">
-          <Calendar size={20} className="text-primary mx-auto mb-1" />
-          <p className="text-2xl font-bold text-text font-display">
-            {totalPlans}
-          </p>
-          <p className="text-xs text-text-secondary">Total plans</p>
-        </div>
-        <div className="bg-bg-card rounded-lg shadow-card p-4 text-center">
-          <TrendingUp size={20} className="text-primary mx-auto mb-1" />
-          <p className="text-2xl font-bold text-text font-display">
-            {avgCompletion}%
-          </p>
-          <p className="text-xs text-text-secondary">Avg. completion</p>
-        </div>
+      {/* Stats summary - Grid layout */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        {/* Average Completion - Ring */}
+        <StatsCard
+          variant="ring"
+          label="Avg. Completion"
+          value={avgCompletion}
+          ringValue={avgCompletion}
+          subtext={totalPlans > 0 ? `${totalPlans} week${totalPlans !== 1 ? 's' : ''}` : "No data"}
+        />
+
+        {/* Total Tasks Completed */}
+        <StatsCard
+          label="Tasks Completed"
+          value={totalTasksCompleted}
+          subtext={`of ${totalTasksPlanned} planned`}
+          icon={<Zap size={24} />}
+        />
+
+        {/* Best Week */}
+        <StatsCard
+          label="Best Week"
+          value={`${bestWeek}%`}
+          subtext={bestWeek > avgCompletion ? "Above average" : ""}
+          icon={<Target size={24} />}
+        />
       </div>
 
       {/* Plan list */}

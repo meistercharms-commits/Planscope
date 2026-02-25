@@ -1,11 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { Input, Textarea } from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Spinner from "@/components/ui/Spinner";
+import { Tier } from "@/types";
+
+interface TierData {
+  tier: Tier;
+  usage: {
+    plansThisMonth: number;
+    plansLimit: number;
+    plansRemaining: number | null;
+  };
+}
+
+interface LastPlanData {
+  id: string;
+  weekStart: string;
+  label: string | null;
+}
 
 export default function NewPlanPage() {
   const router = useRouter();
@@ -17,6 +34,39 @@ export default function NewPlanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Tier info
+  const [tierData, setTierData] = useState<TierData | null>(null);
+
+  // Recurring weeks
+  const [lastPlan, setLastPlan] = useState<LastPlanData | null>(null);
+  const [useCopy, setUseCopy] = useState(false);
+
+  // Plan label (Pro Plus)
+  const [planLabel, setPlanLabel] = useState("");
+
+  useEffect(() => {
+    fetch("/api/settings/tier")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setTierData(data);
+      })
+      .catch(() => {});
+
+    // Fetch last plan for recurring option
+    fetch("/api/plans/history")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((plans) => {
+        if (plans && plans.length > 0) setLastPlan(plans[0]);
+      })
+      .catch(() => {});
+  }, []);
+
+  const canUseCopy = lastPlan && (tierData?.tier === "pro" || tierData?.tier === "pro_plus");
+  const isProPlus = tierData?.tier === "pro_plus";
+  const plansRemaining = tierData?.usage.plansRemaining;
+  const plansLimit = tierData?.usage.plansLimit;
+  const plansUsed = tierData ? tierData.usage.plansThisMonth : 0;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -27,16 +77,23 @@ export default function NewPlanPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dump,
+          dump: useCopy ? "[Copied from previous plan]" : dump,
           mode,
           time_available: timeAvailable,
           energy_level: energyLevel,
           focus_area: focusArea,
+          ...(useCopy && lastPlan ? { copyFromPlanId: lastPlan.id } : {}),
+          ...(planLabel ? { label: planLabel } : {}),
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
+        if (data.code === "PLAN_LIMIT_REACHED") {
+          setError(data.error);
+          setLoading(false);
+          return;
+        }
         throw new Error(data.error || "Failed to generate plan");
       }
 
@@ -52,15 +109,59 @@ export default function NewPlanPage() {
     return <Spinner />;
   }
 
+  // Plan limit reached
+  if (tierData && plansRemaining !== null && plansRemaining !== undefined && plansRemaining <= 0) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <div className="animate-fade-in text-center py-12">
+          <h1 className="text-[28px] font-bold text-text font-display mb-2">
+            You&apos;ve used all {plansLimit} plans this month
+          </h1>
+          <p className="text-sm text-text-secondary mb-6">
+            Your plans reset on the 1st. Until then, focus on what you&apos;ve already planned.
+          </p>
+          {tierData.tier === "free" && (
+            <p className="text-sm text-text-secondary">
+              Need more plans?{" "}
+              <Link href="/settings" className="text-primary font-medium hover:underline">
+                See Pro options
+              </Link>
+            </p>
+          )}
+          {tierData.tier === "pro" && (
+            <p className="text-sm text-text-secondary">
+              Need unlimited plans?{" "}
+              <Link href="/settings" className="text-primary font-medium hover:underline">
+                See Pro Plus
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       <div className="animate-fade-in">
         <h1 className="text-[28px] font-bold text-text font-display mb-2">
           What&apos;s on your mind?
         </h1>
-        <p className="text-sm text-text-secondary mb-8">
+        <p className="text-sm text-text-secondary mb-4">
           Dump everything. We&apos;ll make sense of it.
         </p>
+
+        {/* Plan usage */}
+        {tierData && plansRemaining !== null && plansRemaining !== undefined && (
+          <p className="text-sm text-text-secondary mb-6 flex items-center gap-2">
+            <span>
+              You&apos;ve used {plansUsed} of {plansLimit} plans this month
+            </span>
+            {plansRemaining === 1 && (
+              <span className="text-accent font-medium">&mdash; last one!</span>
+            )}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Mode Toggle */}
@@ -74,19 +175,53 @@ export default function NewPlanPage() {
             onChange={setMode}
           />
 
-          {/* Brain Dump */}
-          <div>
-            <Textarea
-              placeholder="Finish Q2 proposal. Call client about scope change. Code review for team backend. Update project docs. Prep for 1:1s. Should really exercise this week..."
-              value={dump}
-              onChange={(e) => setDump(e.target.value)}
-              className="min-h-[180px] sm:min-h-[220px]"
-              required
+          {/* Plan label for Pro Plus */}
+          {isProPlus && (
+            <Input
+              label="Plan name (optional)"
+              placeholder="e.g. Work week, Creative projects"
+              value={planLabel}
+              onChange={(e) => setPlanLabel(e.target.value)}
+              maxLength={50}
             />
-            <p className="text-xs text-text-tertiary mt-1.5 text-right">
-              {dump.length} characters {dump.length < 20 && dump.length > 0 && "(need at least 20)"}
-            </p>
-          </div>
+          )}
+
+          {/* Copy last week option (Pro/Pro Plus) */}
+          {canUseCopy && (
+            <div className="bg-bg-card rounded-lg border border-border p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useCopy}
+                  onChange={(e) => setUseCopy(e.target.checked)}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <div>
+                  <p className="text-sm font-medium text-text">Copy last week&apos;s plan</p>
+                  <p className="text-xs text-text-secondary">
+                    Start from where you left off. You can still tweak it.
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Brain Dump */}
+          {!useCopy && (
+            <div>
+              <Textarea
+                placeholder="Finish Q2 proposal. Call client about scope change. Code review for team backend. Update project docs. Prep for 1:1s. Should really exercise this week..."
+                value={dump}
+                onChange={(e) => setDump(e.target.value)}
+                className="min-h-[180px] sm:min-h-[220px]"
+                required={!useCopy}
+              />
+              <p className="text-xs text-text-tertiary mt-1.5 text-right">
+                {dump.length} characters{" "}
+                {dump.length < 20 && dump.length > 0 && "(need at least 20)"}
+              </p>
+            </div>
+          )}
 
           {/* Constraints */}
           <SegmentedControl
@@ -140,9 +275,9 @@ export default function NewPlanPage() {
             type="submit"
             fullWidth
             size="lg"
-            disabled={dump.length < 20}
+            disabled={!useCopy && dump.length < 20}
           >
-            Make me a plan
+            {useCopy ? "Copy & make my plan" : "Make me a plan"}
           </Button>
         </form>
       </div>

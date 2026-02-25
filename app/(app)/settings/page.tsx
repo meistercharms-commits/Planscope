@@ -4,18 +4,19 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mail,
-  Lock,
   CreditCard,
   Download,
   Trash2,
   HelpCircle,
   ExternalLink,
+  Check as CheckIcon,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
+import { Tier } from "@/types";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -45,12 +46,53 @@ export default function SettingsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Tier
+  const [tierInfo, setTierInfo] = useState<{
+    tier: Tier;
+    label: string;
+    usage: { plansThisMonth: number; plansLimit: number; plansRemaining: number | null };
+  } | null>(null);
+  const [tierLoading, setTierLoading] = useState(false);
+
   // Redirect anonymous users
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
     }
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetch("/api/settings/tier")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => setTierInfo(data))
+        .catch(() => {});
+    }
+  }, [user]);
+
+  async function handleChangeTier(newTier: Tier) {
+    setTierLoading(true);
+    try {
+      const res = await fetch("/api/settings/tier", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: newTier }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const tierLabel = data.tier === "free" ? "Free" : data.tier === "pro" ? "Pro" : "Pro Plus";
+        setTierInfo((prev) =>
+          prev ? { ...prev, tier: data.tier, label: tierLabel } : prev
+        );
+        showToast(`Switched to ${tierLabel}`);
+        refreshUser();
+      }
+    } catch {
+      showToast("Could not update tier.", "error");
+    } finally {
+      setTierLoading(false);
+    }
+  }
 
   const isOAuth = user?.provider === "google" || user?.provider === "apple";
 
@@ -337,28 +379,69 @@ export default function SettingsPage() {
               Subscription
             </h2>
 
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-medium text-text">
-                  Current plan: Free
-                </p>
-                <p className="text-xs text-text-secondary mt-0.5">
-                  All features are currently available.
-                </p>
-              </div>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => showToast("Coming soon.")}
-              >
-                Upgrade to Pro
-              </Button>
-
-              <p className="text-xs text-text-tertiary">
-                Subscription management coming soon.
+            {tierInfo && (
+              <p className="text-sm text-text-secondary mb-4">
+                You&apos;ve used {tierInfo.usage.plansThisMonth} of{" "}
+                {tierInfo.usage.plansLimit === Infinity
+                  ? "unlimited"
+                  : tierInfo.usage.plansLimit}{" "}
+                plans this month.
               </p>
+            )}
+
+            <div className="space-y-3">
+              <TierCard
+                name="Free"
+                price="£0"
+                tier="free"
+                current={tierInfo?.tier === "free"}
+                features={[
+                  "4 plans per month",
+                  "7-item focus cap",
+                  "Tweak, mark done, park list",
+                ]}
+                onSelect={() => handleChangeTier("free")}
+                loading={tierLoading}
+              />
+              <TierCard
+                name="Pro"
+                price="£2.99/month"
+                tier="pro"
+                current={tierInfo?.tier === "pro"}
+                features={[
+                  "8 plans per month",
+                  "Plan history & completion rates",
+                  "Recurring weeks (template mode)",
+                  "7-item focus cap",
+                ]}
+                onSelect={() => handleChangeTier("pro")}
+                loading={tierLoading}
+                accent
+              />
+              <TierCard
+                name="Pro Plus"
+                price="£4.99/month"
+                priceSub="or £49/year"
+                tier="pro_plus"
+                current={tierInfo?.tier === "pro_plus"}
+                features={[
+                  "Unlimited plans",
+                  "Multiple active plans per week",
+                  "Plan history & completion rates",
+                  "Recurring weeks (template mode)",
+                ]}
+                comingSoon={[
+                  "Team plans (up to 3 people)",
+                  "Voice input for brain dumps",
+                ]}
+                onSelect={() => handleChangeTier("pro_plus")}
+                loading={tierLoading}
+              />
             </div>
+
+            <p className="text-xs text-text-tertiary mt-4">
+              Payment processing coming soon. Tiers are switchable for testing.
+            </p>
           </section>
 
           {/* Section 3: Data */}
@@ -482,6 +565,91 @@ export default function SettingsPage() {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function TierCard({
+  name,
+  price,
+  priceSub,
+  tier,
+  current,
+  features,
+  comingSoon,
+  onSelect,
+  loading,
+  accent,
+}: {
+  name: string;
+  price: string;
+  priceSub?: string;
+  tier: string;
+  current: boolean;
+  features: string[];
+  comingSoon?: string[];
+  onSelect: () => void;
+  loading: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        current
+          ? "border-primary bg-primary/5"
+          : accent
+            ? "border-primary/30"
+            : "border-border"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h3 className="font-semibold text-text font-display">{name}</h3>
+          <p className="text-sm text-text-secondary">
+            {price}
+            {priceSub && (
+              <span className="text-xs text-text-tertiary ml-1">
+                ({priceSub})
+              </span>
+            )}
+          </p>
+        </div>
+        {current ? (
+          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+            Current plan
+          </span>
+        ) : (
+          <Button
+            size="sm"
+            variant={accent ? "primary" : "secondary"}
+            onClick={onSelect}
+            loading={loading}
+          >
+            {tier === "free" ? "Downgrade" : "Upgrade"}
+          </Button>
+        )}
+      </div>
+      <ul className="space-y-1 mt-3">
+        {features.map((f) => (
+          <li
+            key={f}
+            className="flex items-center gap-2 text-sm text-text-secondary"
+          >
+            <CheckIcon size={14} className="text-primary flex-shrink-0" />
+            {f}
+          </li>
+        ))}
+        {comingSoon?.map((f) => (
+          <li
+            key={f}
+            className="flex items-center gap-2 text-sm text-text-tertiary"
+          >
+            <CheckIcon size={14} className="text-text-tertiary flex-shrink-0" />
+            {f}{" "}
+            <span className="text-xs italic">(coming soon)</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { canAddActiveTask } from "@/lib/tiers";
 
 export async function PATCH(
   req: NextRequest,
@@ -26,6 +27,19 @@ export async function PATCH(
     });
     if (!existingTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Enforce 7-item cap when moving from parked to active
+    if (body.section !== undefined && body.section !== "not_this_week") {
+      if (existingTask.section === "not_this_week") {
+        const capCheck = await canAddActiveTask(id);
+        if (!capCheck.allowed) {
+          return NextResponse.json(
+            { error: capCheck.message, code: "PLAN_FULL", activeCount: capCheck.activeCount },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     const updateData: Record<string, unknown> = {};

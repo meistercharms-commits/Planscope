@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
-import { LogOut, Plus, Menu, X, User, Settings } from "lucide-react";
+import { LogOut, Plus, Menu, X, User, Settings, Calendar } from "lucide-react";
 import { useState } from "react";
+import PlanscopeLogo from "@/components/ui/PlanscopeLogo";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -11,8 +12,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl font-semibold text-primary font-display">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+        <PlanscopeLogo size={48} />
+        <div className="text-xl font-semibold text-text font-display">
           Planscope
         </div>
       </div>
@@ -27,9 +29,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="bg-bg-card/80 backdrop-blur-md border-b border-border/60 h-14 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
         <Link
           href={isLoggedIn ? "/dashboard" : "/new-plan"}
-          className="text-xl font-semibold text-text font-display hover:text-primary transition-colors"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          Planscope
+          <PlanscopeLogo size={28} />
+          <span className="text-xl font-semibold text-text font-display">
+            Planscope
+          </span>
         </Link>
 
         <div className="flex items-center gap-2">
@@ -63,6 +68,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     >
                       <Settings size={16} />
                       Profile & Settings
+                    </Link>
+                    <Link
+                      href="/history"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                    >
+                      <Calendar size={16} />
+                      Plan History
                     </Link>
                     <button
                       onClick={() => {

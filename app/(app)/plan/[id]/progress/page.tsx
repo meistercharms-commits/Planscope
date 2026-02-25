@@ -119,12 +119,31 @@ export default function PlanProgressPage({
   async function addTask() {
     if (!newTaskTitle.trim() || !plan) return;
 
+    // Client-side pre-check
+    const activeCount = plan.tasks.filter(
+      (t) => t.section !== "not_this_week"
+    ).length;
+    if (activeCount >= 7) {
+      showToast("Your plan is full. Pick what matters.");
+      setAddingTask(false);
+      setNewTaskTitle("");
+      return;
+    }
+
     try {
       const res = await fetch(`/api/plans/${id}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: newTaskTitle.trim() }),
       });
+
+      if (res.status === 403) {
+        const data = await res.json();
+        showToast(data.error || "Your plan is full. Pick what matters.");
+        setAddingTask(false);
+        setNewTaskTitle("");
+        return;
+      }
 
       if (res.ok) {
         const task = await res.json();
@@ -330,13 +349,22 @@ export default function PlanProgressPage({
                 Add
               </Button>
             </div>
+          ) : totalActive >= 7 ? (
+            <div className="text-center py-3">
+              <p className="text-sm text-text-secondary font-medium">
+                7 items. That&apos;s real.
+              </p>
+              <p className="text-xs text-text-secondary mt-1">
+                Park or complete a task to add a new one.
+              </p>
+            </div>
           ) : (
             <Button
               variant="secondary"
               fullWidth
               onClick={() => setAddingTask(true)}
             >
-              <Plus size={16} className="mr-2" /> Add task
+              <Plus size={16} className="mr-2" /> Add task ({7 - totalActive} slots left)
             </Button>
           )}
         </div>

@@ -671,8 +671,14 @@ function TierCard({
       }`}
     >
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <h3 className="font-semibold text-text font-display">{name}</h3>
+        <div className="flex items-center gap-2">
+          <img
+            src={`/icons/${tier === "free" ? "free" : tier === "pro" ? "pro" : "pro_plus"}.svg`}
+            alt=""
+            className="w-5 h-5"
+          />
+          <div>
+            <h3 className="font-semibold text-text font-display">{name}</h3>
           <p className="text-sm text-text-secondary">
             {price}
             {priceSub && (
@@ -681,6 +687,7 @@ function TierCard({
               </span>
             )}
           </p>
+          </div>
         </div>
         {current ? (
           <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">

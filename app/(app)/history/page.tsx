@@ -115,6 +115,7 @@ export default function HistoryPage() {
       {/* Plan list */}
       {plans.length === 0 ? (
         <div className="text-center py-12">
+          <img src="/icons/no_plans.svg" alt="" className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p className="text-sm text-text-secondary">
             No plans yet.{" "}
             <Link href="/new-plan" className="text-primary font-medium hover:underline">

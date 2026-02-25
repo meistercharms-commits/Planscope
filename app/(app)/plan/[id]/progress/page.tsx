@@ -202,7 +202,7 @@ export default function PlanProgressPage({
         {doFirst.length > 0 && (
           <section className="mb-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-3 font-display">
-              <Flame size={20} className="text-accent" />
+              <img src="/icons/do_first.svg" alt="" className="w-5 h-5" />
               Do First
             </h2>
             <div className="space-y-2">
@@ -222,7 +222,8 @@ export default function PlanProgressPage({
 
         {/* This Week */}
         <section className="mb-6">
-          <h2 className="text-lg font-semibold text-text mb-3 font-display">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-3 font-display">
+            <img src={`/icons/${plan.mode === "today" ? "timer" : "this_week"}.svg`} alt="" className="w-5 h-5" />
             {plan.mode === "today" ? "Today" : "This Week"} ({doFirst.length + thisWeek.length} tasks)
           </h2>
 
@@ -266,6 +267,7 @@ export default function PlanProgressPage({
                 ) : (
                   <ChevronRight size={18} />
                 )}
+                <img src="/icons/not_this_week.svg" alt="" className="w-5 h-5" />
                 Not {plan.mode === "today" ? "Today" : "This Week"} ({notThisWeek.length} safely parked)
               </button>
               <p className="text-xs text-text-secondary italic mt-1 ml-[26px]">

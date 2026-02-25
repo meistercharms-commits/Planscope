@@ -168,8 +168,8 @@ export default function NewPlanPage() {
           <SegmentedControl
             label="Mode"
             options={[
-              { value: "today", label: "Today" },
-              { value: "week", label: "This Week" },
+              { value: "today", label: "Today", icon: "/icons/today.svg" },
+              { value: "week", label: "This Week", icon: "/icons/this_week.svg" },
             ]}
             value={mode}
             onChange={setMode}

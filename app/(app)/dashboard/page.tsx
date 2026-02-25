@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getUserTier } from "@/lib/tiers";
+import { getUserTier, canHaveMultipleActivePlans } from "@/lib/tiers";
 import DashboardMultiPlan from "./DashboardMultiPlan";
 
 export default async function DashboardPage() {
@@ -36,6 +36,13 @@ export default async function DashboardPage() {
     const plan = activePlans[0];
     if (plan.status === "review") redirect(`/plan/${plan.id}`);
     redirect(`/plan/${plan.id}/progress`);
+  }
+
+  // Multiple plans but tier doesn't allow it: redirect to most recent
+  if (!canHaveMultipleActivePlans(tier)) {
+    const mostRecent = activePlans[0];
+    if (mostRecent.status === "review") redirect(`/plan/${mostRecent.id}`);
+    redirect(`/plan/${mostRecent.id}/progress`);
   }
 
   // Multiple plans (Pro Plus): show plan picker

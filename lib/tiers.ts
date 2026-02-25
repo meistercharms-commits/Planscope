@@ -90,6 +90,52 @@ export async function canAddActiveTask(planId: string): Promise<{
   return { allowed: true, activeCount };
 }
 
+/**
+ * Count how many active or review plans the user has for the current week.
+ */
+export async function getActiveWeekPlanCount(userId: string): Promise<number> {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - dayOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+
+  return prisma.plan.count({
+    where: {
+      userId,
+      status: { in: ['active', 'review'] },
+      weekStart: { gte: weekStart },
+    },
+  });
+}
+
+/**
+ * Check whether the user can create an additional active plan this week.
+ * Free/Pro users are limited to 1 active plan per week.
+ */
+export async function canCreateAdditionalPlan(userId: string): Promise<{
+  allowed: boolean;
+  activeCount: number;
+  message?: string;
+}> {
+  const tier = await getUserTier(userId);
+  const activeCount = await getActiveWeekPlanCount(userId);
+
+  if (canHaveMultipleActivePlans(tier)) {
+    return { allowed: true, activeCount };
+  }
+
+  if (activeCount >= 1) {
+    return {
+      allowed: false,
+      activeCount,
+      message: 'You already have an active plan this week. Complete or archive it to start a new one.',
+    };
+  }
+
+  return { allowed: true, activeCount };
+}
+
 export function canHaveMultipleActivePlans(tier: Tier): boolean {
   return TIER_LIMITS[tier].multipleActivePlans;
 }

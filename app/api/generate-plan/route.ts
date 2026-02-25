@@ -3,7 +3,7 @@ import { getAuthOrAnon } from "@/lib/auth";
 import { generateFullPlan } from "@/lib/llm";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
-import { canCreatePlan, getUserTier, canUseRecurring } from "@/lib/tiers";
+import { canCreatePlan, canCreateAdditionalPlan, getUserTier, canUseRecurring } from "@/lib/tiers";
 import { PlanMeta } from "@/types";
 import { generateLearningSummary } from "@/lib/learnings";
 
@@ -24,6 +24,15 @@ export async function POST(req: NextRequest) {
     if (!planCheck.allowed) {
       return NextResponse.json(
         { error: planCheck.message, code: "PLAN_LIMIT_REACHED" },
+        { status: 403 }
+      );
+    }
+
+    // Check active plan limit for this week
+    const activePlanCheck = await canCreateAdditionalPlan(auth.userId);
+    if (!activePlanCheck.allowed) {
+      return NextResponse.json(
+        { error: activePlanCheck.message, code: "ACTIVE_PLAN_LIMIT" },
         { status: 403 }
       );
     }
@@ -55,6 +64,15 @@ export async function POST(req: NextRequest) {
       if (!canUseRecurring(tier)) {
         return NextResponse.json(
           { error: "Recurring weeks are available on Pro and Pro Plus.", code: "TIER_REQUIRED" },
+          { status: 403 }
+        );
+      }
+
+      // Also check active plan limit for copy path
+      const activePlanCheckCopy = await canCreateAdditionalPlan(auth.userId);
+      if (!activePlanCheckCopy.allowed) {
+        return NextResponse.json(
+          { error: activePlanCheckCopy.message, code: "ACTIVE_PLAN_LIMIT" },
           { status: 403 }
         );
       }
@@ -174,6 +192,15 @@ export async function POST(req: NextRequest) {
     if (!recheck.allowed) {
       return NextResponse.json(
         { error: recheck.message, code: "PLAN_LIMIT_REACHED" },
+        { status: 403 }
+      );
+    }
+
+    // Re-check active plan limit (another tab could have created a plan during LLM call)
+    const activeRecheck = await canCreateAdditionalPlan(auth.userId);
+    if (!activeRecheck.allowed) {
+      return NextResponse.json(
+        { error: activeRecheck.message, code: "ACTIVE_PLAN_LIMIT" },
         { status: 403 }
       );
     }

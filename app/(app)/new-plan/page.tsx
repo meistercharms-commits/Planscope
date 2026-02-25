@@ -44,11 +44,22 @@ export default function NewPlanPage() {
   // Plan label (Pro Plus)
   const [planLabel, setPlanLabel] = useState("");
 
+  // Active plan check
+  const [activePlan, setActivePlan] = useState<{ id: string; status: string } | null>(null);
+
   useEffect(() => {
     fetch("/api/settings/tier")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) setTierData(data);
+      })
+      .catch(() => {});
+
+    // Fetch active plans for this week
+    fetch("/api/plans/active")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((plans) => {
+        if (plans && plans.length > 0) setActivePlan(plans[0]);
       })
       .catch(() => {});
 
@@ -89,7 +100,7 @@ export default function NewPlanPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        if (data.code === "PLAN_LIMIT_REACHED") {
+        if (data.code === "PLAN_LIMIT_REACHED" || data.code === "ACTIVE_PLAN_LIMIT") {
           setError(data.error);
           setLoading(false);
           return;
@@ -161,6 +172,32 @@ export default function NewPlanPage() {
               <span className="text-accent font-medium">&mdash; last one!</span>
             )}
           </p>
+        )}
+
+        {/* Active plan warning for Free/Pro */}
+        {activePlan && tierData && tierData.tier !== "pro_plus" && (
+          <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 mb-6">
+            <p className="text-sm font-medium text-text mb-1">
+              You already have an active plan this week
+            </p>
+            <p className="text-sm text-text-secondary mb-3">
+              Free and Pro plans are limited to one active plan at a time. Complete or archive your current plan to start a new one.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={activePlan.status === "review" ? `/plan/${activePlan.id}` : `/plan/${activePlan.id}/progress`}
+                className="text-sm text-primary font-medium hover:underline"
+              >
+                Go to your current plan
+              </Link>
+              <Link
+                href="/settings"
+                className="text-sm text-text-secondary hover:underline"
+              >
+                {tierData.tier === "free" ? "See Pro Plus" : "Upgrade to Pro Plus"}
+              </Link>
+            </div>
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">

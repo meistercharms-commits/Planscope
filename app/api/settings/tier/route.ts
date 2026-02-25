@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getAuthOrAnon } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getUserTier, getMonthlyPlanCount } from "@/lib/tiers";
 import { TIER_LIMITS, TIER_LABELS, TIER_PRICES } from "@/types";
 
 export async function GET() {
   try {
-    const auth = await getCurrentUser();
-    if (!auth) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+    const auth = await getAuthOrAnon();
 
     const tier = await getUserTier(auth.userId);
     const planCount = await getMonthlyPlanCount(auth.userId);

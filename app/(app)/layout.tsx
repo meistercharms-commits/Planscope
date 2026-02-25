@@ -108,6 +108,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 ) : (
                   <>
                     <Link
+                      href="/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                    >
+                      <Settings size={16} />
+                      Profile & Settings
+                    </Link>
+                    <div className="border-t border-border my-1" />
+                    <Link
                       href="/signup"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-bg-subtle transition-colors"

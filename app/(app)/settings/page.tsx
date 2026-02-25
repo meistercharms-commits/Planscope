@@ -59,19 +59,14 @@ export default function SettingsPage() {
   } | null>(null);
   const [tierLoading, setTierLoading] = useState(false);
 
-  // Redirect anonymous users
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
-  }, [loading, user, router]);
-
-  useEffect(() => {
+    fetch("/api/settings/tier")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setTierInfo(data);
+      })
+      .catch(() => {});
     if (user) {
-      fetch("/api/settings/tier")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => setTierInfo(data))
-        .catch(() => {});
       fetch("/api/settings/learn-enabled")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
@@ -107,7 +102,7 @@ export default function SettingsPage() {
 
   const isOAuth = user?.provider === "google" || user?.provider === "apple";
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-lg text-text-secondary">Loading...</div>
@@ -239,149 +234,151 @@ export default function SettingsPage() {
         </p>
 
         <div className="space-y-6">
-          {/* Section 1: Account */}
-          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
-              <Mail size={20} className="text-primary" />
-              Account
-            </h2>
+          {/* Section 1: Account (logged-in only) */}
+          {user ? (
+            <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
+                <Mail size={20} className="text-primary" />
+                Account
+              </h2>
 
-            <p className="text-sm text-text-secondary mb-4">
-              Signed in as{" "}
-              <span className="font-medium text-text">{user.email}</span>
-              {isOAuth && (
-                <span className="text-xs text-text-tertiary ml-1">
-                  via {user.provider === "google" ? "Google" : "Apple"}
-                </span>
+              <p className="text-sm text-text-secondary mb-4">
+                Signed in as{" "}
+                <span className="font-medium text-text">{user.email}</span>
+                {isOAuth && (
+                  <span className="text-xs text-text-tertiary ml-1">
+                    via {user.provider === "google" ? "Google" : "Apple"}
+                  </span>
+                )}
+              </p>
+
+              {!isOAuth && (
+                <>
+                  {/* Change email */}
+                  <div className="mb-3">
+                    <button
+                      onClick={() => {
+                        setShowEmailForm(!showEmailForm);
+                        setEmailError("");
+                      }}
+                      className="text-sm text-primary hover:underline font-medium cursor-pointer"
+                    >
+                      Change email address
+                    </button>
+
+                    {showEmailForm && (
+                      <form
+                        onSubmit={handleChangeEmail}
+                        className="mt-3 space-y-3 pl-0 animate-slide-open"
+                      >
+                        <Input
+                          label="New email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          required
+                        />
+                        <Input
+                          label="Current password"
+                          type="password"
+                          placeholder="Confirm your password"
+                          value={emailPassword}
+                          onChange={(e) => setEmailPassword(e.target.value)}
+                          required
+                        />
+                        {emailError && (
+                          <p className="text-sm text-error">{emailError}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button type="submit" size="sm" loading={emailLoading}>
+                            Update email
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowEmailForm(false);
+                              setEmailError("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+
+                  {/* Change password */}
+                  <div>
+                    <button
+                      onClick={() => {
+                        setShowPasswordForm(!showPasswordForm);
+                        setPasswordError("");
+                      }}
+                      className="text-sm text-primary hover:underline font-medium cursor-pointer"
+                    >
+                      Change password
+                    </button>
+
+                    {showPasswordForm && (
+                      <form
+                        onSubmit={handleChangePassword}
+                        className="mt-3 space-y-3 pl-0 animate-slide-open"
+                      >
+                        <Input
+                          label="Current password"
+                          type="password"
+                          placeholder="Your current password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          required
+                        />
+                        <Input
+                          label="New password"
+                          type="password"
+                          placeholder="At least 6 characters"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                          minLength={6}
+                        />
+                        <Input
+                          label="Confirm new password"
+                          type="password"
+                          placeholder="Type it again"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          minLength={6}
+                        />
+                        {passwordError && (
+                          <p className="text-sm text-error">{passwordError}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button type="submit" size="sm" loading={passwordLoading}>
+                            Update password
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowPasswordForm(false);
+                              setPasswordError("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </>
               )}
-            </p>
-
-            {!isOAuth && (
-              <>
-                {/* Change email */}
-                <div className="mb-3">
-                  <button
-                    onClick={() => {
-                      setShowEmailForm(!showEmailForm);
-                      setEmailError("");
-                    }}
-                    className="text-sm text-primary hover:underline font-medium cursor-pointer"
-                  >
-                    Change email address
-                  </button>
-
-                  {showEmailForm && (
-                    <form
-                      onSubmit={handleChangeEmail}
-                      className="mt-3 space-y-3 pl-0 animate-slide-open"
-                    >
-                      <Input
-                        label="New email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        required
-                      />
-                      <Input
-                        label="Current password"
-                        type="password"
-                        placeholder="Confirm your password"
-                        value={emailPassword}
-                        onChange={(e) => setEmailPassword(e.target.value)}
-                        required
-                      />
-                      {emailError && (
-                        <p className="text-sm text-error">{emailError}</p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button type="submit" size="sm" loading={emailLoading}>
-                          Update email
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setShowEmailForm(false);
-                            setEmailError("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-
-                {/* Change password */}
-                <div>
-                  <button
-                    onClick={() => {
-                      setShowPasswordForm(!showPasswordForm);
-                      setPasswordError("");
-                    }}
-                    className="text-sm text-primary hover:underline font-medium cursor-pointer"
-                  >
-                    Change password
-                  </button>
-
-                  {showPasswordForm && (
-                    <form
-                      onSubmit={handleChangePassword}
-                      className="mt-3 space-y-3 pl-0 animate-slide-open"
-                    >
-                      <Input
-                        label="Current password"
-                        type="password"
-                        placeholder="Your current password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        required
-                      />
-                      <Input
-                        label="New password"
-                        type="password"
-                        placeholder="At least 6 characters"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                      <Input
-                        label="Confirm new password"
-                        type="password"
-                        placeholder="Type it again"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                      {passwordError && (
-                        <p className="text-sm text-error">{passwordError}</p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button type="submit" size="sm" loading={passwordLoading}>
-                          Update password
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setShowPasswordForm(false);
-                            setPasswordError("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </>
-            )}
-          </section>
+            </section>
+          ) : null}
 
           {/* Section 2: Subscription */}
           <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
@@ -450,112 +447,113 @@ export default function SettingsPage() {
               />
             </div>
 
-            <p className="text-xs text-text-tertiary mt-4">
-              Payment processing coming soon. Tiers are switchable for testing.
-            </p>
           </section>
 
-          {/* Section 3: Learning & Feedback */}
-          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
-              <Brain size={20} className="text-primary" />
-              Learning &amp; Feedback
-            </h2>
+          {/* Section 3: Learning & Feedback (logged-in only) */}
+          {user ? (
+            <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
+                <Brain size={20} className="text-primary" />
+                Learning &amp; Feedback
+              </h2>
 
-            <div className="flex items-center justify-between">
-              <div className="flex-1 mr-4">
-                <p className="text-sm font-medium text-text">
-                  Let Planscope learn from your planning patterns
-                </p>
-                <p className="text-xs text-text-secondary mt-1">
-                  When enabled, the app uses your completion history to improve
-                  recommendations. No data is shared externally.
-                </p>
-              </div>
-              <button
-                role="switch"
-                aria-checked={learnEnabled}
-                onClick={async () => {
-                  const newValue = !learnEnabled;
-                  setLearnEnabled(newValue);
-                  setLearnLoading(true);
-                  try {
-                    const res = await fetch("/api/settings/learn-enabled", {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ enabled: newValue }),
-                    });
-                    if (!res.ok) throw new Error();
-                    showToast(
-                      newValue
-                        ? "Learning enabled"
-                        : "Learning disabled"
-                    );
-                  } catch {
-                    setLearnEnabled(!newValue);
-                    showToast("Could not update preference.", "error");
-                  } finally {
-                    setLearnLoading(false);
-                  }
-                }}
-                disabled={learnLoading}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  learnEnabled ? "bg-primary" : "bg-border"
-                } ${learnLoading ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    learnEnabled ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-          </section>
-
-          {/* Section 4: Data */}
-          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
-              <Download size={20} className="text-primary" />
-              Data
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  loading={exportLoading}
-                  onClick={handleExport}
+              <div className="flex items-center justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-sm font-medium text-text">
+                    Let Planscope learn from your planning patterns
+                  </p>
+                  <p className="text-xs text-text-secondary mt-1">
+                    When enabled, the app uses your completion history to improve
+                    recommendations. No data is shared externally.
+                  </p>
+                </div>
+                <button
+                  role="switch"
+                  aria-checked={learnEnabled}
+                  onClick={async () => {
+                    const newValue = !learnEnabled;
+                    setLearnEnabled(newValue);
+                    setLearnLoading(true);
+                    try {
+                      const res = await fetch("/api/settings/learn-enabled", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ enabled: newValue }),
+                      });
+                      if (!res.ok) throw new Error();
+                      showToast(
+                        newValue
+                          ? "Learning enabled"
+                          : "Learning disabled"
+                      );
+                    } catch {
+                      setLearnEnabled(!newValue);
+                      showToast("Could not update preference.", "error");
+                    } finally {
+                      setLearnLoading(false);
+                    }
+                  }}
+                  disabled={learnLoading}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    learnEnabled ? "bg-primary" : "bg-border"
+                  } ${learnLoading ? "opacity-50" : ""}`}
                 >
-                  <Download size={16} className="mr-2" />
-                  Export my data
-                </Button>
-                <p className="text-xs text-text-secondary mt-2">
-                  Download a copy of all your data (plans, tasks, and account
-                  information) in JSON format.
-                </p>
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      learnEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
+            </section>
+          ) : null}
 
-              <div className="h-px bg-border" />
+          {/* Section 4: Data (logged-in only) */}
+          {user ? (
+            <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
+                <Download size={20} className="text-primary" />
+                Data
+              </h2>
 
-              <div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setShowDeleteModal(true)}
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  Delete account
-                </Button>
-                <p className="text-xs text-text-secondary mt-2">
-                  Permanently delete your account and all associated data. This
-                  cannot be undone.
-                </p>
+              <div className="space-y-4">
+                <div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={exportLoading}
+                    onClick={handleExport}
+                  >
+                    <Download size={16} className="mr-2" />
+                    Export my data
+                  </Button>
+                  <p className="text-xs text-text-secondary mt-2">
+                    Download a copy of all your data (plans, tasks, and account
+                    information) in JSON format.
+                  </p>
+                </div>
+
+                <div className="h-px bg-border" />
+
+                <div>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => setShowDeleteModal(true)}
+                  >
+                    <Trash2 size={16} className="mr-2" />
+                    Delete account
+                  </Button>
+                  <p className="text-xs text-text-secondary mt-2">
+                    Permanently delete your account and all associated data. This
+                    cannot be undone.
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
 
-          {/* Section 4: Help */}
+          {/* Section 5: Help */}
           <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6 mb-8">
             <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
               <HelpCircle size={20} className="text-primary" />

@@ -86,15 +86,32 @@ export default function PlanProgressPage({
     const newStatus = currentStatus === "done" ? "pending" : "done";
 
     // Optimistic update
-    setPlan({
+    const updatedPlan = {
       ...plan,
       tasks: plan.tasks.map((t) =>
         t.id === taskId ? { ...t, status: newStatus } : t
       ),
-    });
+    };
+    setPlan(updatedPlan);
 
     if (newStatus === "done") {
-      const msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];
+      // Calculate completion percentage
+      const activeTasks = updatedPlan.tasks.filter((t) => t.section !== "not_this_week");
+      const doneCount = activeTasks.filter((t) => t.status === "done").length;
+      const totalActive = activeTasks.length;
+      const completionPercent = Math.round((doneCount / totalActive) * 100);
+
+      // Show milestone celebration or regular message
+      let msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];
+
+      if (completionPercent === 50) {
+        msg = "🔥 Halfway there! Keep the momentum going!";
+      } else if (completionPercent === 75) {
+        msg = "🚀 75% done! You're crushing it!";
+      } else if (completionPercent === 100) {
+        msg = "🎉 You did it! All tasks complete!";
+      }
+
       showToast(msg);
     }
 
@@ -185,6 +202,23 @@ export default function PlanProgressPage({
 
   return (
     <div>
+      <style>{`
+        @keyframes checkScaleAnimation {
+          0% { transform: scale(0.5); opacity: 0; }
+          50% { transform: scale(1.2); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-checkmark {
+          animation: checkScaleAnimation 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes slideOutLeft {
+          0% { opacity: 1; transform: translateX(0); }
+          100% { opacity: 0; transform: translateX(-100px); }
+        }
+        .animate-task-complete {
+          animation: slideOutLeft 0.5s ease-out forwards;
+        }
+      `}</style>
       {/* Progress Bar */}
       <ProgressBar done={doneCount} total={totalActive} />
 

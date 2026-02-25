@@ -350,10 +350,16 @@ export default function PlanReviewPage({
 function TaskReviewCard({ task, showContext }: { task: Task; showContext?: boolean }) {
   // Split context on " | " to get separate parts (why | deadline, or notes)
   const contextParts = task.context?.split(" | ").filter(Boolean) || [];
+  const categoryIcon = task.category ? `/icons/${task.category}.svg` : null;
 
   return (
     <div className="bg-bg-card rounded-lg p-4 shadow-card hover:shadow-sm transition-all duration-200">
-      <p className="font-medium text-text">{task.title}</p>
+      <div className="flex items-center gap-2">
+        {categoryIcon && (
+          <img src={categoryIcon} alt={task.category} className="w-4 h-4 flex-shrink-0" />
+        )}
+        <p className="font-medium text-text">{task.title}</p>
+      </div>
       <div className="flex items-center gap-2 mt-1">
         {task.timeEstimate && (
           <span className="text-xs text-text-secondary">{task.timeEstimate}</span>

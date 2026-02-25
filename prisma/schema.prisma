@@ -15,6 +15,7 @@ model User {
   providerId   String?  @map("provider_id")
   tier         String   @default("free")
   tierUpdatedAt DateTime? @map("tier_updated_at")
+  learnEnabled Boolean  @default(true) @map("learn_enabled")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   plans        Plan[]

@@ -195,3 +195,29 @@ export interface GeneratedPlan {
   thisWeek: ScoredTask[];
   notThisWeek: ScoredTask[];
 }
+
+// ─── Learnings (week-to-week learning loop) ───
+
+export interface LearningsSummary {
+  weeksSampled: number;
+  overallCompletionRate: number;
+  strongCategories: string[];
+  weakCategories: string[];
+  doFirstSuccess: number;
+  recurringIssues: { title: string; count: number }[];
+  overcommitmentWarning: boolean;
+  topRecommendation: string;
+}
+
+export interface PlanLearning {
+  planId: string;
+  weekStart: string;
+  metrics: {
+    totalTasksPlanned: number;
+    tasksCompleted: number;
+    completionRate: number;
+  };
+  categoryPerformance: Record<string, { attempted: number; completed: number; rate: number }>;
+  doFirstCompletion: number;
+  quickWinCompletion: number;
+}

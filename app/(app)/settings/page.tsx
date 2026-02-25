@@ -10,6 +10,7 @@ import {
   HelpCircle,
   ExternalLink,
   Check as CheckIcon,
+  Brain,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -46,6 +47,10 @@ export default function SettingsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Learning
+  const [learnEnabled, setLearnEnabled] = useState(true);
+  const [learnLoading, setLearnLoading] = useState(false);
+
   // Tier
   const [tierInfo, setTierInfo] = useState<{
     tier: Tier;
@@ -66,6 +71,12 @@ export default function SettingsPage() {
       fetch("/api/settings/tier")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => setTierInfo(data))
+        .catch(() => {});
+      fetch("/api/settings/learn-enabled")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) setLearnEnabled(data.learnEnabled);
+        })
         .catch(() => {});
     }
   }, [user]);
@@ -444,7 +455,64 @@ export default function SettingsPage() {
             </p>
           </section>
 
-          {/* Section 3: Data */}
+          {/* Section 3: Learning & Feedback */}
+          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+            <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
+              <Brain size={20} className="text-primary" />
+              Learning &amp; Feedback
+            </h2>
+
+            <div className="flex items-center justify-between">
+              <div className="flex-1 mr-4">
+                <p className="text-sm font-medium text-text">
+                  Let Planscope learn from your planning patterns
+                </p>
+                <p className="text-xs text-text-secondary mt-1">
+                  When enabled, the app uses your completion history to improve
+                  recommendations. No data is shared externally.
+                </p>
+              </div>
+              <button
+                role="switch"
+                aria-checked={learnEnabled}
+                onClick={async () => {
+                  const newValue = !learnEnabled;
+                  setLearnEnabled(newValue);
+                  setLearnLoading(true);
+                  try {
+                    const res = await fetch("/api/settings/learn-enabled", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ enabled: newValue }),
+                    });
+                    if (!res.ok) throw new Error();
+                    showToast(
+                      newValue
+                        ? "Learning enabled"
+                        : "Learning disabled"
+                    );
+                  } catch {
+                    setLearnEnabled(!newValue);
+                    showToast("Could not update preference.", "error");
+                  } finally {
+                    setLearnLoading(false);
+                  }
+                }}
+                disabled={learnLoading}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  learnEnabled ? "bg-primary" : "bg-border"
+                } ${learnLoading ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    learnEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </section>
+
+          {/* Section 4: Data */}
           <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
             <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
               <Download size={20} className="text-primary" />

@@ -4,6 +4,7 @@ import {
   UserConstraints,
   ScoredTasksResult,
   GeneratedPlanOutput,
+  LearningsSummary,
 } from "@/types";
 
 let _client: Anthropic | null = null;
@@ -64,6 +65,41 @@ function timeLabel(level: string, mode: string): string {
   return { low: "5-10 hours", medium: "10-20 hours", high: "20+ hours" }[level] || "10-20 hours";
 }
 
+// ─── Learnings Context Builder ───
+
+function buildLearningsContext(learnings: LearningsSummary): string {
+  const lines: string[] = [
+    `\nHISTORICAL LEARNING CONTEXT (from ${learnings.weeksSampled} previous plans):`,
+    `- Overall completion rate: ${learnings.overallCompletionRate}%`,
+  ];
+
+  if (learnings.strongCategories.length > 0) {
+    lines.push(`- Strong categories (>70% completion): ${learnings.strongCategories.join(", ")}`);
+  }
+  if (learnings.weakCategories.length > 0) {
+    lines.push(`- Weak categories (<40% completion): ${learnings.weakCategories.join(", ")}`);
+  }
+  lines.push(`- Do-first success rate: ${learnings.doFirstSuccess}%`);
+
+  if (learnings.overcommitmentWarning) {
+    lines.push("- WARNING: User consistently overcommits. Reduce active task count.");
+  }
+  if (learnings.recurringIssues.length > 0) {
+    for (const issue of learnings.recurringIssues) {
+      lines.push(`- Recurring: "${issue.title}" appeared ${issue.count}x with low completion. Likely blocker.`);
+    }
+  }
+
+  lines.push("");
+  lines.push("ADJUSTMENT RULES:");
+  lines.push("- Boost urgency for strong category tasks (high success likelihood)");
+  lines.push("- Add realism penalty for large-effort tasks if user historically struggles");
+  lines.push("- Boost quick-win score for tasks in weak categories (build momentum)");
+  lines.push("- Flag recurring items for extra scrutiny");
+
+  return lines.join("\n");
+}
+
 // ─── Call 1: Parse + Score (combined) ───
 
 interface AnalyseResult {
@@ -74,7 +110,8 @@ interface AnalyseResult {
 async function analyseAndScore(
   dump: string,
   constraints: UserConstraints,
-  mode: string
+  mode: string,
+  userLearnings?: LearningsSummary | null
 ): Promise<AnalyseResult> {
   const currentDate = new Date().toISOString().split("T")[0];
   const maxTasks = mode === "today" ? 3 : 7;
@@ -183,7 +220,7 @@ VETO FILTER:
 - prevents sleep/health → VETO
 - overwhelm >= 8 + adds more work → VETO
 
-FINAL SCORE: Urgency 35% + Realism 25% + Anxiety 20% + Quick win 20% (veto overrides all)`,
+FINAL SCORE: Urgency 35% + Realism 25% + Anxiety 20% + Quick win 20% (veto overrides all)${userLearnings ? buildLearningsContext(userLearnings) : ""}`,
       },
     ],
   });
@@ -223,7 +260,8 @@ export async function generatePlanText(
   parsedData: ParsedDump,
   scoredData: ScoredTasksResult,
   constraints: UserConstraints,
-  mode: string
+  mode: string,
+  userLearnings?: LearningsSummary | null
 ): Promise<GeneratedPlanOutput> {
   const maxTasks = mode === "today" ? 3 : 7;
   const periodLabel = mode === "today" ? "today" : "this week";
@@ -315,7 +353,14 @@ SPECIAL CASES:
 
 VALIDATION RULES FOR "NOT THIS WEEK":
 Every parked item: "This matters. I'm not dismissing it. Here's why not now."
-Never: "This isn't important." Instead: "This is real. It's just not ${periodLabel}."`,
+Never: "This isn't important." Instead: "This is real. It's just not ${periodLabel}."${userLearnings ? `
+
+LEARNING-INFORMED TONE:
+- Overall completion: ${userLearnings.overallCompletionRate}%${userLearnings.overallCompletionRate < 50 ? " — mention in reality_check that planning fewer tasks builds momentum" : ""}
+- Do-first success: ${userLearnings.doFirstSuccess}%${userLearnings.doFirstSuccess >= 80 ? " — reinforce in headline or reality_check (\"Your strength is following through on priorities\")" : ""}
+${userLearnings.weakCategories.length > 0 ? `- Weak categories: ${userLearnings.weakCategories.join(", ")} — add validation (\"These tasks are tough — start small\")` : ""}
+${userLearnings.overcommitmentWarning ? "- OVERCOMMITMENT pattern detected — warn in real_talk about planning less" : ""}
+${userLearnings.recurringIssues.length > 0 ? `- Recurring items: ${userLearnings.recurringIssues.map((i) => `"${i.title}" (${i.count}x)`).join(", ")} — ask in notes if these are blocked or truly doable` : ""}` : ""}`,
       },
     ],
   });
@@ -393,14 +438,15 @@ export function generateCrisisPlan(): GeneratedPlanOutput {
 export async function generateFullPlan(
   dump: string,
   constraints: UserConstraints,
-  mode: string = "week"
+  mode: string = "week",
+  userLearnings?: LearningsSummary | null
 ): Promise<{
   parsed: ParsedDump;
   scored: ScoredTasksResult;
   plan: GeneratedPlanOutput;
 }> {
   // Step 1: Parse + Score in one call
-  const { parsed, scored } = await analyseAndScore(dump, constraints, mode);
+  const { parsed, scored } = await analyseAndScore(dump, constraints, mode, userLearnings);
 
   // Step 2: Check for crisis level
   if (parsed.emotional_context.overall_overwhelm_level >= 9) {
@@ -425,7 +471,7 @@ export async function generateFullPlan(
   }
 
   // Step 3: Generate plan text
-  const plan = await generatePlanText(dump, parsed, scored, constraints, mode);
+  const plan = await generatePlanText(dump, parsed, scored, constraints, mode, userLearnings);
 
   return { parsed, scored, plan };
 }

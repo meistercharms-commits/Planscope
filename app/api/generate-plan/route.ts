@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { canCreatePlan, getUserTier, canUseRecurring } from "@/lib/tiers";
 import { PlanMeta } from "@/types";
+import { generateLearningSummary } from "@/lib/learnings";
 
 export async function POST(req: NextRequest) {
   try {
@@ -116,8 +117,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if user has learning enabled and fetch learnings
+    const userRecord = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { learnEnabled: true },
+    });
+    const userLearnings =
+      userRecord?.learnEnabled !== false
+        ? await generateLearningSummary(auth.userId)
+        : null;
+
     // Run the three-call pipeline: Parse → Score → Generate
-    const { parsed, scored, plan } = await generateFullPlan(dump, constraints, planMode);
+    const { parsed, scored, plan } = await generateFullPlan(dump, constraints, planMode, userLearnings);
 
     if (!parsed.tasks || parsed.tasks.length === 0) {
       return NextResponse.json(

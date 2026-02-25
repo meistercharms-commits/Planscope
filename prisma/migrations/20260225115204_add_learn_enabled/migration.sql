@@ -1,0 +1,21 @@
+-- RedefineTables
+PRAGMA defer_foreign_keys=ON;
+PRAGMA foreign_keys=OFF;
+CREATE TABLE "new_users" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "password_hash" TEXT,
+    "provider" TEXT NOT NULL DEFAULT 'email',
+    "provider_id" TEXT,
+    "tier" TEXT NOT NULL DEFAULT 'free',
+    "tier_updated_at" DATETIME,
+    "learn_enabled" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
+);
+INSERT INTO "new_users" ("created_at", "email", "id", "password_hash", "provider", "provider_id", "tier", "tier_updated_at", "updated_at") SELECT "created_at", "email", "id", "password_hash", "provider", "provider_id", "tier", "tier_updated_at", "updated_at" FROM "users";
+DROP TABLE "users";
+ALTER TABLE "new_users" RENAME TO "users";
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+PRAGMA foreign_keys=ON;
+PRAGMA defer_foreign_keys=OFF;

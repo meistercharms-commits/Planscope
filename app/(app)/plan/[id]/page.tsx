@@ -14,6 +14,8 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
+import LearningsInsight from "@/components/ui/LearningsInsight";
+import type { LearningsSummary } from "@/types";
 
 interface Task {
   id: string;
@@ -58,9 +60,24 @@ export default function PlanReviewPage({
   const [parkedOpen, setParkedOpen] = useState(true);
   const [tweakOpen, setTweakOpen] = useState(false);
   const [tweaking, setTweaking] = useState(false);
+  const [learnings, setLearnings] = useState<LearningsSummary | null>(null);
 
   useEffect(() => {
     fetchPlan();
+    // Fetch learnings (if user has learning enabled)
+    fetch("/api/settings/learn-enabled")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.learnEnabled) {
+          fetch("/api/users/learnings")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+              if (data?.learnings) setLearnings(data.learnings);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
   }, [id]);
 
   async function fetchPlan() {
@@ -164,6 +181,13 @@ export default function PlanReviewPage({
             <AlertTriangle size={20} className="text-accent flex-shrink-0 mt-0.5" />
             <p className="text-sm text-text leading-relaxed">{meta.burnout_alert}</p>
           </div>
+        </div>
+      )}
+
+      {/* Learnings Insight */}
+      {learnings && (
+        <div className="animate-fade-in mb-6">
+          <LearningsInsight learnings={learnings} />
         </div>
       )}
 

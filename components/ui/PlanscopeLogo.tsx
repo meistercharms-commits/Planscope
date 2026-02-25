@@ -3,30 +3,44 @@
 interface PlanscopeLogoProps {
   size?: number;
   progress?: number; // 0-100, if set shows progress ring
+  color?: string;
+  variant?: "default" | "inverted" | "mono";
+  showCircle?: boolean; // true = circle container (loading/header), false = icon only
   className?: string;
 }
 
 export default function PlanscopeLogo({
   size = 80,
   progress,
+  color,
+  variant = "default",
+  showCircle = true,
   className = "",
 }: PlanscopeLogoProps) {
-  const strokeWidth = size * 0.04;
+  const strokeWidth = Math.max(size * 0.04, 1.5);
   const radius = (size - strokeWidth) / 2;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
-
-  // Arrow sizing relative to container
-  const arrowSize = size * 0.28;
-  const arrowStroke = size * 0.04;
-  const arrowTop = center - arrowSize * 0.55;
-  const arrowBottom = center + arrowSize * 0.55;
-  const arrowWing = arrowSize * 0.45;
 
   const showProgress = progress !== undefined && progress >= 0;
   const dashOffset = showProgress
     ? circumference - (progress / 100) * circumference
     : 0;
+
+  // Resolve arrow color based on variant
+  const arrowColor =
+    color ??
+    (variant === "inverted"
+      ? "#FFFFFF"
+      : variant === "mono"
+        ? "#000000"
+        : "#2E8B6A");
+
+  // Arrow stroke: scaled from 2px on 100px artboard
+  const arrowStroke = Math.max((size / 100) * 2, 1.2);
+
+  // Scale factor from 100px artboard to current size
+  const s = size / 100;
 
   return (
     <svg
@@ -36,15 +50,17 @@ export default function PlanscopeLogo({
       fill="none"
       className={className}
     >
-      {/* Background circle (track) */}
-      <circle
-        cx={center}
-        cy={center}
-        r={radius}
-        stroke={showProgress ? "#E8E8E6" : "#2E8B6A"}
-        strokeWidth={strokeWidth}
-        fill="none"
-      />
+      {/* Circle container (track) */}
+      {showCircle && (
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          stroke={showProgress ? "#E8E8E6" : arrowColor}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+      )}
 
       {/* Progress ring */}
       {showProgress && (
@@ -52,7 +68,7 @@ export default function PlanscopeLogo({
           cx={center}
           cy={center}
           r={radius}
-          stroke="#2E8B6A"
+          stroke={arrowColor}
           strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
@@ -66,40 +82,36 @@ export default function PlanscopeLogo({
         />
       )}
 
-      {/* Down arrow - stem */}
-      <line
-        x1={center}
-        y1={arrowTop}
-        x2={center}
-        y2={arrowBottom}
-        stroke="#2E8B6A"
-        strokeWidth={arrowStroke}
-        strokeLinecap="round"
-      />
-
-      {/* Down arrow - left wing */}
-      <line
-        x1={center - arrowWing}
-        y1={arrowBottom - arrowWing}
-        x2={center}
-        y2={arrowBottom}
-        stroke="#2E8B6A"
+      {/* Outer arrow (100% opacity) */}
+      <path
+        d={`M${38 * s} ${55 * s}L${50 * s} ${70 * s}M${50 * s} ${70 * s}L${62 * s} ${55 * s}M${50 * s} ${70 * s}V${30 * s}`}
+        stroke={arrowColor}
         strokeWidth={arrowStroke}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
-      {/* Down arrow - right wing */}
-      <line
-        x1={center + arrowWing}
-        y1={arrowBottom - arrowWing}
-        x2={center}
-        y2={arrowBottom}
-        stroke="#2E8B6A"
-        strokeWidth={arrowStroke}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Middle arrow (75% opacity) */}
+      <g opacity="0.75">
+        <path
+          d={`M${42 * s} ${52 * s}L${50 * s} ${62 * s}M${50 * s} ${62 * s}L${58 * s} ${52 * s}M${50 * s} ${62 * s}V${38 * s}`}
+          stroke={arrowColor}
+          strokeWidth={arrowStroke}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+
+      {/* Inner arrow (50% opacity) */}
+      <g opacity="0.5">
+        <path
+          d={`M${45 * s} ${50 * s}L${50 * s} ${55 * s}M${50 * s} ${55 * s}L${55 * s} ${50 * s}M${50 * s} ${55 * s}V${45 * s}`}
+          stroke={arrowColor}
+          strokeWidth={arrowStroke}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
     </svg>
   );
 }

@@ -28,9 +28,9 @@ export default function NewPlanPage() {
   const router = useRouter();
   const [dump, setDump] = useState("");
   const [mode, setMode] = useState("week");
-  const [timeAvailable, setTimeAvailable] = useState("medium");
-  const [energyLevel, setEnergyLevel] = useState("ok");
-  const [focusArea, setFocusArea] = useState("work");
+  const [timeAvailable, setTimeAvailable] = useState("");
+  const [energyLevel, setEnergyLevel] = useState("");
+  const [focusArea, setFocusArea] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -275,7 +275,7 @@ export default function NewPlanPage() {
             type="submit"
             fullWidth
             size="lg"
-            disabled={!useCopy && dump.length < 20}
+            disabled={(!useCopy && dump.length < 20) || !timeAvailable || !energyLevel || !focusArea}
           >
             {useCopy ? "Copy & make my plan" : "Make me a plan"}
           </Button>

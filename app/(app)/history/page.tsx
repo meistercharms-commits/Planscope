@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Calendar, TrendingUp, Lock, Zap, Target } from "lucide-react";
+import { Lock, Zap, Target } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
 import StatsCard from "@/components/ui/StatsCard";
@@ -122,7 +122,7 @@ export default function HistoryPage() {
         <StatsCard
           label="Best Week"
           value={`${bestWeek}%`}
-          subtext={bestWeek > avgCompletion ? "Above average" : ""}
+          subtext={bestWeek > avgCompletion ? "Above average" : bestWeek === avgCompletion && totalPlans > 1 ? "Consistent" : ""}
           icon={<Target size={24} />}
         />
       </div>

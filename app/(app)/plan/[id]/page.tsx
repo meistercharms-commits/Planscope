@@ -357,7 +357,7 @@ function TaskReviewCard({ task, showContext }: { task: Task; showContext?: boole
     <div className="bg-bg-card rounded-lg p-4 shadow-card hover:shadow-sm transition-all duration-200">
       <div className="flex items-center gap-2">
         {categoryIcon && (
-          <img src={categoryIcon} alt={task.category} className="w-4 h-4 flex-shrink-0" />
+          <img src={categoryIcon} alt={task.category ?? ""} className="w-4 h-4 flex-shrink-0" />
         )}
         <p className="font-medium text-text">{task.title}</p>
       </div>

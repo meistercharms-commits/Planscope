@@ -22,7 +22,7 @@ export async function GET() {
       limits,
       usage: {
         plansThisMonth: planCount,
-        plansLimit: limits.plansPerMonth,
+        plansLimit: limits.plansPerMonth === Infinity ? null : limits.plansPerMonth,
         plansRemaining:
           limits.plansPerMonth === Infinity
             ? null

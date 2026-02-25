@@ -393,7 +393,7 @@ export default function SettingsPage() {
             {tierInfo && (
               <p className="text-sm text-text-secondary mb-4">
                 You&apos;ve used {tierInfo.usage.plansThisMonth} of{" "}
-                {tierInfo.usage.plansLimit === Infinity
+                {tierInfo.usage.plansLimit == null
                   ? "unlimited"
                   : tierInfo.usage.plansLimit}{" "}
                 plans this month.

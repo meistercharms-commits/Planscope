@@ -4,7 +4,6 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Flame,
   ChevronDown,
   ChevronRight,
   Check,
@@ -99,7 +98,9 @@ export default function PlanProgressPage({
       const activeTasks = updatedPlan.tasks.filter((t) => t.section !== "not_this_week");
       const doneCount = activeTasks.filter((t) => t.status === "done").length;
       const totalActive = activeTasks.length;
-      const completionPercent = Math.round((doneCount / totalActive) * 100);
+      const completionPercent = totalActive > 0
+        ? Math.round((doneCount / totalActive) * 100)
+        : 0;
 
       // Show milestone celebration or regular message
       let msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];

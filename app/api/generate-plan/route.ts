@@ -31,10 +31,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { dump, mode, time_available, energy_level, focus_area, copyFromPlanId, label } = body;
 
+    const validTime = ["low", "medium", "high"];
+    const validEnergy = ["drained", "ok", "fired_up"];
+    const validFocus = ["work", "health", "home", "money", "other"];
+
+    if (!validTime.includes(time_available) || !validEnergy.includes(energy_level) || !validFocus.includes(focus_area)) {
+      return NextResponse.json(
+        { error: "Please select all planning options before submitting." },
+        { status: 400 }
+      );
+    }
+
     const constraints = {
-      time_available: time_available || "medium",
-      energy_level: energy_level || "ok",
-      focus_area: focus_area || "work",
+      time_available,
+      energy_level,
+      focus_area,
     };
     const planMode = mode || "week";
 
@@ -157,6 +168,15 @@ export async function POST(req: NextRequest) {
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
+
+    // Re-check plan limit right before saving (closes race window from LLM delay)
+    const recheck = await canCreatePlan(auth.userId);
+    if (!recheck.allowed) {
+      return NextResponse.json(
+        { error: recheck.message, code: "PLAN_LIMIT_REACHED" },
+        { status: 403 }
+      );
+    }
 
     // Save plan to database
     const savedPlan = await prisma.plan.create({

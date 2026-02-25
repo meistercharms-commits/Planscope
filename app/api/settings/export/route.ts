@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+function tryParseJSON(value: string | null): unknown {
+  if (!value) return null;
+  try { return JSON.parse(value); } catch { return value; }
+}
+
 export async function GET() {
   try {
     const auth = await getCurrentUser();
@@ -48,8 +53,8 @@ export async function GET() {
         weekStart: plan.weekStart,
         weekEnd: plan.weekEnd,
         originalDump: plan.originalDump,
-        parsedDump: plan.parsedDump ? JSON.parse(plan.parsedDump) : null,
-        constraints: plan.constraints ? JSON.parse(plan.constraints) : null,
+        parsedDump: tryParseJSON(plan.parsedDump),
+        constraints: tryParseJSON(plan.constraints),
         status: plan.status,
         createdAt: plan.createdAt,
         updatedAt: plan.updatedAt,

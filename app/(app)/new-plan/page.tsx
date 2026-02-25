@@ -227,9 +227,9 @@ export default function NewPlanPage() {
           <SegmentedControl
             label={`Time ${mode === "today" ? "today" : "this week"}`}
             options={[
-              { value: "low", label: "Low" },
-              { value: "medium", label: "Medium" },
-              { value: "high", label: "High" },
+              { value: "low", label: "Low", icon: "/icons/low_time.svg" },
+              { value: "medium", label: "Medium", icon: "/icons/medium_time.svg" },
+              { value: "high", label: "High", icon: "/icons/high_time.svg" },
             ]}
             value={timeAvailable}
             onChange={setTimeAvailable}
@@ -238,9 +238,9 @@ export default function NewPlanPage() {
           <SegmentedControl
             label="Energy level"
             options={[
-              { value: "drained", label: "Drained" },
-              { value: "ok", label: "OK" },
-              { value: "fired_up", label: "Fired up" },
+              { value: "drained", label: "Drained", icon: "/icons/drained.svg" },
+              { value: "ok", label: "OK", icon: "/icons/ok_energy.svg" },
+              { value: "fired_up", label: "Fired up", icon: "/icons/fired_up_energy.svg" },
             ]}
             value={energyLevel}
             onChange={setEnergyLevel}
@@ -249,11 +249,11 @@ export default function NewPlanPage() {
           <SegmentedControl
             label="Main focus"
             options={[
-              { value: "work", label: "Work" },
-              { value: "health", label: "Health" },
-              { value: "home", label: "Home" },
-              { value: "money", label: "Money" },
-              { value: "other", label: "Other" },
+              { value: "work", label: "Work", icon: "/icons/work.svg" },
+              { value: "health", label: "Health", icon: "/icons/health.svg" },
+              { value: "home", label: "Home", icon: "/icons/home.svg" },
+              { value: "money", label: "Money", icon: "/icons/money.svg" },
+              { value: "other", label: "Other", icon: "/icons/other.svg" },
             ]}
             value={focusArea}
             onChange={setFocusArea}

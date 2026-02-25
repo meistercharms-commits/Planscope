@@ -29,12 +29,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="bg-bg-card/80 backdrop-blur-md border-b border-border/60 h-14 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
         <Link
           href={isLoggedIn ? "/dashboard" : "/new-plan"}
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="flex items-center hover:opacity-80 transition-opacity"
         >
-          <PlanscopeLogo size={28} />
-          <span className="text-xl font-semibold text-text font-display">
-            Planscope
-          </span>
+          <img
+            src="/logo-circle-black-wordmark.svg"
+            alt="Planscope"
+            className="h-10"
+          />
         </Link>
 
         <div className="flex items-center gap-2">

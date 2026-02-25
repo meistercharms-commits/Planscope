@@ -46,12 +46,11 @@ function SignupForm() {
   return (
     <div className="w-full max-w-sm animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary font-display">
-          Planscope
-        </h1>
-        <p className="text-xs text-text-secondary mt-1">
-          Real plans for real people
-        </p>
+        <img
+          src="/logo-wordmark-tagline.svg"
+          alt="Planscope - Real plans for real people"
+          className="h-20"
+        />
       </div>
 
       <h2 className="text-xl font-semibold text-text mb-1 font-display">

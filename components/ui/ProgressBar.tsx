@@ -8,7 +8,7 @@ export default function ProgressBar({ done, total }: ProgressBarProps) {
   const remaining = total - done;
 
   return (
-    <div className="bg-primary-light px-6 py-3 border-b border-border">
+    <div className="bg-primary-light px-6 py-3 border-b border-border sticky top-14 z-30" style={{ boxShadow: "0 -56px 0 var(--color-bg-card)" }}>
       <div className="max-w-2xl mx-auto">
         <p className="text-sm font-semibold text-primary text-center mb-2">
           {done} of {total} done{remaining > 0 ? ` | ${remaining} to go` : " - all done!"}

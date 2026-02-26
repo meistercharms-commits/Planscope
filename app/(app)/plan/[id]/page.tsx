@@ -15,6 +15,7 @@ import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import LearningsInsight from "@/components/ui/LearningsInsight";
 import type { LearningsSummary } from "@/types";
+import { getCategoryColors } from "@/lib/category-colors";
 
 interface Task {
   id: string;
@@ -217,11 +218,17 @@ export default function PlanReviewPage({
         </h2>
         {categories.map((cat) => {
           const tasks = thisWeek.filter((t) => (t.category || "other") === cat);
+          const catColors = getCategoryColors(cat);
           if (tasks.length === 0) return null;
           return (
             <div key={cat} className="mb-4">
-              <h3 className="text-sm font-medium text-text mb-2 capitalize">
-                {cat} ({tasks.length})
+              <h3 className="text-sm font-medium text-text mb-2 flex items-center gap-2">
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: catColors.border }}
+                />
+                {catColors.label}
+                <span className="text-text-secondary font-normal">({tasks.length})</span>
               </h3>
               <div className="space-y-3">
                 {tasks.map((task) => (
@@ -349,25 +356,43 @@ export default function PlanReviewPage({
 }
 
 function TaskReviewCard({ task, showContext }: { task: Task; showContext?: boolean }) {
-  // Split context on " | " to get separate parts (why | deadline, or notes)
   const contextParts = task.context?.split(" | ").filter(Boolean) || [];
-  const categoryIcon = task.category ? `/icons/${task.category}.svg` : null;
+  const colors = getCategoryColors(task.category);
 
   return (
-    <div className="bg-bg-card rounded-lg p-4 shadow-card hover:shadow-sm transition-all duration-200">
+    <div
+      className="bg-bg-card rounded-lg p-4 shadow-card hover:shadow-sm transition-all duration-200 border-l-[3px]"
+      style={{ borderLeftColor: colors.border }}
+    >
       <div className="flex items-center gap-2">
-        {categoryIcon && (
-          <img src={categoryIcon} alt={task.category ?? ""} className="w-4 h-4 flex-shrink-0" />
-        )}
-        <p className="font-medium text-text">{task.title}</p>
+        <span
+          className="w-4 h-4 flex-shrink-0 inline-block"
+          style={{
+            maskImage: `url(${colors.icon})`,
+            maskSize: "contain",
+            maskRepeat: "no-repeat",
+            WebkitMaskImage: `url(${colors.icon})`,
+            WebkitMaskSize: "contain",
+            WebkitMaskRepeat: "no-repeat",
+            backgroundColor: colors.border,
+          }}
+        />
+        <p className="font-medium text-text flex-1">{task.title}</p>
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
+          style={{ backgroundColor: colors.badge, color: colors.badgeText }}
+        >
+          {colors.label}
+        </span>
       </div>
-      <div className="flex items-center gap-2 mt-1">
-        {task.timeEstimate && (
-          <span className="text-xs text-text-secondary">{task.timeEstimate}</span>
-        )}
-      </div>
+      {task.timeEstimate && (
+        <div className="flex items-center gap-1.5 mt-1.5 ml-6">
+          <img src="/icons/timer.svg" alt="" className="w-3 h-3 opacity-50" />
+          <span className="text-xs text-text-secondary font-medium">{task.timeEstimate}</span>
+        </div>
+      )}
       {showContext && contextParts.length > 0 && (
-        <p className="text-xs text-text-secondary mt-2 leading-relaxed">
+        <p className="text-xs text-text-secondary mt-2 ml-6 leading-relaxed">
           {contextParts.join(" ")}
         </p>
       )}
@@ -376,21 +401,29 @@ function TaskReviewCard({ task, showContext }: { task: Task; showContext?: boole
 }
 
 function ParkedTaskCard({ task }: { task: Task }) {
-  // For parked tasks, context contains "reason | validation"
   const contextParts = task.context?.split(" | ").filter(Boolean) || [];
   const reason = contextParts[0] || null;
   const validation = contextParts[1] || null;
+  const colors = getCategoryColors(task.category);
 
   return (
-    <div className="pl-2">
+    <div
+      className="pl-3 border-l-2"
+      style={{ borderLeftColor: colors.border + "60" }}
+    >
       <p className="text-sm text-text-secondary">
-        &bull; {task.title}
+        {task.title}
         {task.category && (
-          <span className="text-text-tertiary ml-1">({task.category})</span>
+          <span
+            className="text-[10px] font-medium uppercase tracking-wide ml-1.5"
+            style={{ color: colors.badgeText }}
+          >
+            {colors.label}
+          </span>
         )}
       </p>
       {(reason || validation) && (
-        <p className="text-xs text-text-tertiary mt-0.5 ml-3 leading-relaxed">
+        <p className="text-xs text-text-tertiary mt-0.5 leading-relaxed">
           {reason}
           {validation && reason && " — "}
           {validation}

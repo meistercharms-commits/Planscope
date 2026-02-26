@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
-import { LogOut, Plus, Menu, X, User, Settings, Calendar } from "lucide-react";
+import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import PlanscopeLogo from "@/components/ui/PlanscopeLogo";
 
@@ -89,69 +89,101 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border rounded-lg shadow-lg py-1 animate-scale-in">
-                {isLoggedIn ? (
-                  <>
-                    <div className="px-3 py-2 text-xs text-text-secondary border-b border-border">
-                      {user?.email}
-                    </div>
-                    <Link
-                      href="/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
-                    >
-                      <Settings size={16} />
-                      Profile & Settings
-                    </Link>
-                    <Link
-                      href="/history"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
-                    >
-                      <Calendar size={16} />
-                      Plan History
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        logout();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors cursor-pointer"
-                    >
-                      <LogOut size={16} />
-                      Log out
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
-                    >
-                      <Settings size={16} />
-                      Profile & Settings
-                    </Link>
-                    <div className="border-t border-border my-1" />
-                    <Link
-                      href="/signup"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-bg-subtle transition-colors"
-                    >
-                      <User size={16} />
-                      Save my plans
-                    </Link>
-                    <Link
-                      href="/login"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
-                    >
-                      <LogOut size={16} />
-                      Log in
-                    </Link>
-                  </>
-                )}
-              </div>
+              <>
+                {/* Invisible backdrop to close menu on outside click */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border rounded-lg shadow-lg py-1 animate-scale-in z-50">
+                  {isLoggedIn ? (
+                    <>
+                      <div className="px-3 py-2 text-xs text-text-secondary border-b border-border">
+                        {user?.email}
+                      </div>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <LayoutDashboard size={16} />
+                        My Plans
+                      </Link>
+                      <Link
+                        href="/history"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <Calendar size={16} />
+                        Plan History
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </Link>
+                      <div className="border-t border-border my-1" />
+                      <button
+                        onClick={() => {
+                          setMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors cursor-pointer"
+                      >
+                        <LogOut size={16} />
+                        Log out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <LayoutDashboard size={16} />
+                        My Plans
+                      </Link>
+                      <Link
+                        href="/history"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <Calendar size={16} />
+                        Plan History
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </Link>
+                      <div className="border-t border-border my-1" />
+                      <Link
+                        href="/signup"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-bg-subtle transition-colors"
+                      >
+                        <User size={16} />
+                        Save my plans
+                      </Link>
+                      <Link
+                        href="/login"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                      >
+                        <LogOut size={16} />
+                        Log in
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>

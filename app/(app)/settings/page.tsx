@@ -413,13 +413,14 @@ export default function SettingsPage() {
               />
               <TierCard
                 name="Pro"
-                price="£2.99/month"
+                price="£7.99/month"
                 tier="pro"
                 current={tierInfo?.tier === "pro"}
                 features={[
                   "8 plans per month",
                   "Plan history & completion rates",
                   "Recurring weeks (template mode)",
+                  "Focus Mode timer",
                   "7-item focus cap",
                 ]}
                 onSelect={() => handleChangeTier("pro")}
@@ -428,8 +429,8 @@ export default function SettingsPage() {
               />
               <TierCard
                 name="Pro Plus"
-                price="£4.99/month"
-                priceSub="or £49/year"
+                price="£14.99/month"
+                priceSub="or £149.99/year"
                 tier="pro_plus"
                 current={tierInfo?.tier === "pro_plus"}
                 features={[
@@ -437,6 +438,7 @@ export default function SettingsPage() {
                   "Multiple active plans per week",
                   "Plan history & completion rates",
                   "Recurring weeks (template mode)",
+                  "Focus Mode timer",
                 ]}
                 comingSoon={[
                   "Team plans (up to 3 people)",

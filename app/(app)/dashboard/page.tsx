@@ -4,11 +4,12 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getUserTier, canHaveMultipleActivePlans } from "@/lib/tiers";
 import DashboardMultiPlan from "./DashboardMultiPlan";
+import DashboardEmpty from "./DashboardEmpty";
 
 export default async function DashboardPage() {
   // Check for existing auth — don't create anon user here (can't set cookies in Server Components)
   const loggedIn = await getCurrentUser();
-  let userId: string;
+  let userId: string | null = null;
 
   if (loggedIn) {
     userId = loggedIn.userId;
@@ -16,14 +17,16 @@ export default async function DashboardPage() {
     // Check for existing anon cookie without creating one
     const cookieStore = await cookies();
     const anonId = cookieStore.get("planscope_anon")?.value;
-    if (!anonId) redirect("/new-plan");
-
-    const anonUser = await prisma.user.findFirst({
-      where: { email: `anon-${anonId}@planscope.local` },
-    });
-    if (!anonUser) redirect("/new-plan");
-    userId = anonUser.id;
+    if (anonId) {
+      const anonUser = await prisma.user.findFirst({
+        where: { email: `anon-${anonId}@planscope.local` },
+      });
+      if (anonUser) userId = anonUser.id;
+    }
   }
+
+  // No user found at all — show empty state
+  if (!userId) return <DashboardEmpty />;
 
   const auth = { userId };
 
@@ -47,8 +50,8 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  // No active plans: go to brain dump
-  if (activePlans.length === 0) redirect("/new-plan");
+  // No active plans: show empty state with CTA
+  if (activePlans.length === 0) return <DashboardEmpty />;
 
   // Single plan: redirect as before
   if (activePlans.length === 1) {

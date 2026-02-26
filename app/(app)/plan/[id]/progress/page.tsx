@@ -11,11 +11,13 @@ import {
   EyeOff,
   Eye,
   Bookmark,
+  Archive,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
+import { getCategoryColors } from "@/lib/category-colors";
 
 interface Task {
   id: string;
@@ -224,6 +226,30 @@ export default function PlanProgressPage({
     }
   }
 
+  const [archiving, setArchiving] = useState(false);
+
+  async function archivePlan() {
+    if (!plan || archiving) return;
+    setArchiving(true);
+    try {
+      const res = await fetch(`/api/plans/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived" }),
+      });
+      if (res.ok) {
+        showToast("Plan archived");
+        router.push("/dashboard");
+      } else {
+        showToast("Couldn't archive plan. Try again.", "error");
+        setArchiving(false);
+      }
+    } catch {
+      showToast("Couldn't archive plan. Try again.", "error");
+      setArchiving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -280,6 +306,9 @@ export default function PlanProgressPage({
               ? "Today"
               : `Week of ${weekStart.toLocaleDateString("en-GB", { month: "short", day: "numeric" })}`}
           </h1>
+          <p className="text-sm text-text-secondary mt-1">
+            {totalActive} {totalActive === 1 ? "task" : "tasks"}
+          </p>
         </div>
 
         {/* Do First */}
@@ -296,6 +325,8 @@ export default function PlanProgressPage({
                   task={task}
                   onToggle={() => toggleTask(task.id, task.status)}
                   hidden={hideDone && task.status === "done"}
+                  planId={id}
+                  userTier={user?.tier}
                 />
               ))}
             </div>
@@ -308,18 +339,24 @@ export default function PlanProgressPage({
         <section className="mb-6">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-3 font-display">
             <img src={`/icons/${plan.mode === "today" ? "timer" : "this_week"}.svg`} alt="" className="w-5 h-5" />
-            {plan.mode === "today" ? "Today" : "This Week"} ({doFirst.length + thisWeek.length} tasks)
+            {plan.mode === "today" ? "Today" : "This Week"}
           </h2>
 
           {categories.map((cat) => {
             const tasks = thisWeek.filter(
               (t) => (t.category || "other") === cat
             );
+            const catColors = getCategoryColors(cat);
             if (tasks.length === 0) return null;
             return (
               <div key={cat} className="mb-4">
-                <h3 className="text-sm font-medium text-text mb-2 capitalize">
-                  {cat} ({tasks.length})
+                <h3 className="text-sm font-medium text-text mb-2 flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: catColors.border }}
+                  />
+                  {catColors.label}
+                  <span className="text-text-secondary font-normal">({tasks.length})</span>
                 </h3>
                 <div className="space-y-2">
                   {tasks.map((task) => (
@@ -328,6 +365,8 @@ export default function PlanProgressPage({
                       task={task}
                       onToggle={() => toggleTask(task.id, task.status)}
                       hidden={hideDone && task.status === "done"}
+                      planId={id}
+                      userTier={user?.tier}
                     />
                   ))}
                 </div>
@@ -483,6 +522,21 @@ export default function PlanProgressPage({
               <Plus size={16} className="mr-2" /> Add task ({7 - totalActive} slots left)
             </Button>
           )}
+
+          {/* Archive plan */}
+          <div className="pt-4 border-t border-border">
+            <button
+              onClick={archivePlan}
+              disabled={archiving}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm text-text-secondary hover:text-text transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Archive size={16} />
+              {archiving ? "Archiving..." : "Archive this plan"}
+            </button>
+            <p className="text-xs text-text-tertiary text-center mt-1">
+              Moves this plan to your history so you can start fresh.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -493,31 +547,48 @@ function TaskProgressCard({
   task,
   onToggle,
   hidden,
+  planId,
+  userTier,
 }: {
   task: Task;
   onToggle: () => void;
   hidden: boolean;
+  planId: string;
+  userTier?: string;
 }) {
   const isDone = task.status === "done";
+  const colors = getCategoryColors(task.category);
+  const [hovered, setHovered] = useState(false);
 
   if (hidden) return null;
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+      className={`flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all duration-200 border-l-[3px] ${
         isDone
           ? "bg-bg-subtle opacity-60"
-          : "bg-bg-card shadow-card hover:shadow-sm"
+          : "bg-bg-card shadow-card"
       }`}
+      style={{
+        borderLeftColor: isDone ? colors.border + "80" : colors.border,
+        backgroundColor: !isDone && hovered ? colors.hoverBg : undefined,
+      }}
       onClick={onToggle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* Checkbox */}
+      {/* Checkbox — category-coloured when done */}
       <div
         className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 ${
           isDone
-            ? "bg-primary border-primary"
+            ? "border-transparent"
             : "border-border hover:border-primary/50"
         }`}
+        style={
+          isDone
+            ? { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }
+            : undefined
+        }
       >
         {isDone && (
           <Check size={14} className="text-white animate-checkmark" />
@@ -526,20 +597,61 @@ function TaskProgressCard({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p
-          className={`font-medium text-sm transition-all duration-200 ${
-            isDone ? "line-through text-text-secondary" : "text-text"
-          }`}
-        >
-          {task.title}
-        </p>
-        {task.timeEstimate && (
-          <p className="text-xs text-text-secondary mt-0.5">
-            {task.timeEstimate}
-            {task.context && ` | ${task.context}`}
+        <div className="flex items-center gap-2">
+          <span
+            className="w-4 h-4 flex-shrink-0 inline-block"
+            style={{
+              maskImage: `url(${colors.icon})`,
+              maskSize: "contain",
+              maskRepeat: "no-repeat",
+              WebkitMaskImage: `url(${colors.icon})`,
+              WebkitMaskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              backgroundColor: isDone ? colors.border + "80" : colors.border,
+            }}
+          />
+          <p
+            className={`font-medium text-sm transition-all duration-200 flex-1 ${
+              isDone ? "line-through text-text-secondary" : "text-text"
+            }`}
+          >
+            {task.title}
+          </p>
+          {!isDone && (
+            <span
+              className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: colors.badge, color: colors.badgeText }}
+            >
+              {colors.label}
+            </span>
+          )}
+        </div>
+        {task.context && (
+          <p className="text-xs text-text-secondary mt-1 ml-6">
+            {task.context.replace(/\s*[·|]\s*/g, ". ")}
           </p>
         )}
+        {task.timeEstimate && (
+          <div className="flex items-center gap-1 mt-1.5 ml-6">
+            <img src="/icons/timer.svg" alt="" className="w-3 h-3 opacity-40" />
+            <span className="text-xs text-text-secondary">
+              {task.timeEstimate}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Focus mode chevron — all users, pending tasks only */}
+      {!isDone && (
+        <Link
+          href={`/plan/${planId}/focus/${task.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-shrink-0 self-center p-2 -mr-2 text-text-tertiary hover:text-primary transition-colors"
+          aria-label={`Focus on ${task.title}`}
+        >
+          <ChevronRight size={18} />
+        </Link>
+      )}
     </div>
   );
 }

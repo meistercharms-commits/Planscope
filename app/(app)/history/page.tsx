@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Zap, Target } from "lucide-react";
+import { Lock, Zap, Target, Calendar } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
 import StatsCard from "@/components/ui/StatsCard";
@@ -23,33 +22,32 @@ interface PlanHistoryItem {
 }
 
 export default function HistoryPage() {
-  const router = useRouter();
   const { user, loading } = useAuth();
   const [plans, setPlans] = useState<PlanHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [tierError, setTierError] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
+    if (loading) return;
+    if (!user) {
+      // Not logged in — stop loading and show upsell
+      setHistoryLoading(false);
       return;
     }
-    if (user) {
-      fetch("/api/plans/history")
-        .then(async (r) => {
-          if (r.status === 403) {
-            setTierError(true);
-            return;
-          }
-          if (r.ok) {
-            const data = await r.json();
-            setPlans(data);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setHistoryLoading(false));
-    }
-  }, [user, loading, router]);
+    fetch("/api/plans/history")
+      .then(async (r) => {
+        if (r.status === 403) {
+          setTierError(true);
+          return;
+        }
+        if (r.ok) {
+          const data = await r.json();
+          setPlans(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false));
+  }, [user, loading]);
 
   if (loading || historyLoading) {
     return (
@@ -59,20 +57,130 @@ export default function HistoryPage() {
     );
   }
 
+  // Not logged in — show login prompt + upsell
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+        <h1 className="text-[28px] font-bold text-text font-display mb-2">
+          Plan History
+        </h1>
+        <p className="text-sm text-text-secondary mb-8">
+          Track your progress over time.
+        </p>
+
+        <div className="text-center py-12 bg-bg-card rounded-lg p-8 shadow-card mb-6">
+          <Lock size={40} className="text-text-tertiary mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-text font-display mb-2">
+            Sign in to view your history
+          </h2>
+          <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto">
+            Create an account or log in to keep track of your past plans and completion rates.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/login">
+              <Button>Log in</Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="secondary">Create account</Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Pro upsell */}
+        <div className="bg-bg-card rounded-lg p-6 shadow-card">
+          <h3 className="text-sm font-semibold text-text font-display mb-4">
+            Unlock more with Pro
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <Calendar size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Full plan history</p>
+                <p className="text-xs text-text-secondary">See every plan you&apos;ve created and your completion stats</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Target size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Smart insights</p>
+                <p className="text-xs text-text-secondary">AI learns your patterns and improves future plans</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Zap size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Unlimited plans</p>
+                <p className="text-xs text-text-secondary">Create as many plans as you need each month</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-5 pt-4 border-t border-border">
+            <Link href="/settings">
+              <Button variant="secondary" fullWidth>See Pro options</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Logged in but tier doesn't support history
   if (tierError) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 text-center">
-        <div className="py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+        <h1 className="text-[28px] font-bold text-text font-display mb-2">
+          Plan History
+        </h1>
+        <p className="text-sm text-text-secondary mb-8">
+          Track your progress over time.
+        </p>
+
+        <div className="text-center py-12 bg-bg-card rounded-lg p-8 shadow-card mb-6">
           <Lock size={40} className="text-text-tertiary mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-text font-display mb-2">
+          <h2 className="text-lg font-semibold text-text font-display mb-2">
             Plan history is a Pro feature
-          </h1>
-          <p className="text-sm text-text-secondary mb-6">
+          </h2>
+          <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto">
             See your past plans, track patterns, and measure completion rates.
           </p>
           <Link href="/settings">
-            <Button>See Pro options</Button>
+            <Button>Upgrade to Pro</Button>
           </Link>
+        </div>
+
+        {/* Pro feature breakdown */}
+        <div className="bg-bg-card rounded-lg p-6 shadow-card">
+          <h3 className="text-sm font-semibold text-text font-display mb-4">
+            What you get with Pro
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <Calendar size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Full plan history</p>
+                <p className="text-xs text-text-secondary">See every plan you&apos;ve created and your completion stats</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Target size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Smart insights</p>
+                <p className="text-xs text-text-secondary">AI learns your patterns and improves future plans</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Zap size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Unlimited plans</p>
+                <p className="text-xs text-text-secondary">Create as many plans as you need each month</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-5 pt-4 border-t border-border">
+            <Link href="/settings">
+              <Button variant="secondary" fullWidth>See Pro options</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );

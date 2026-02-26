@@ -15,6 +15,14 @@
   --color-warning: #FFB347;
   --color-error: #E74C3C;
 
+  /* Category accent colours */
+  --color-cat-work: #4A90B0;
+  --color-cat-health: #6BA87D;
+  --color-cat-home: #B8956F;
+  --color-cat-money: #7B68AE;
+  --color-cat-life: #D17F2B;
+  --color-cat-other: #2E8B6A;
+
   --color-white: #FFFFFF;
   --color-bg: #FAFAF9;
   --color-bg-subtle: #F3F3F2;

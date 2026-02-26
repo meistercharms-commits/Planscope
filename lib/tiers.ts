@@ -129,7 +129,7 @@ export async function canCreateAdditionalPlan(userId: string): Promise<{
     return {
       allowed: false,
       activeCount,
-      message: 'You already have an active plan this week. Complete or archive it to start a new one.',
+      message: 'You already have an active plan this week. Finish your tasks or archive it to start a new one.',
     };
   }
 

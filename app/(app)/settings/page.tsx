@@ -74,6 +74,16 @@ export default function SettingsPage() {
   } | null>(null);
   const [tierLoading, setTierLoading] = useState(false);
 
+  // Billing
+  const [billingInfo, setBillingInfo] = useState<{
+    stripeSubscriptionId: string | null;
+    stripeSubscriptionStatus: string | null;
+    stripePriceId: string | null;
+    stripeCurrentPeriodEnd: string | null;
+    billingPortalUrl: string | null;
+  } | null>(null);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+
   useEffect(() => {
     fetch("/api/settings/tier")
       .then((r) => (r.ok ? r.json() : null))
@@ -88,6 +98,13 @@ export default function SettingsPage() {
           if (data) setLearnEnabled(data.learnEnabled);
         })
         .catch(() => {});
+      // Load billing info (subscription status + portal URL)
+      fetch("/api/billing/customer")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) setBillingInfo(data);
+        })
+        .catch(() => {});
     }
     // Load notification preferences
     fetch("/api/settings/notifications")
@@ -98,27 +115,34 @@ export default function SettingsPage() {
       .catch(() => {});
   }, [user]);
 
-  async function handleChangeTier(newTier: Tier) {
+  async function handleUpgrade(priceId: string) {
     setTierLoading(true);
     try {
-      const res = await fetch("/api/settings/tier", {
-        method: "PATCH",
+      const res = await fetch("/api/checkout/create-session", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: newTier }),
+        body: JSON.stringify({ priceId }),
       });
-      if (res.ok) {
+
+      if (!res.ok) {
         const data = await res.json();
-        const tierLabel = data.tier === "free" ? "Free" : data.tier === "pro" ? "Pro" : "Pro Plus";
-        setTierInfo((prev) =>
-          prev ? { ...prev, tier: data.tier, label: tierLabel } : prev
-        );
-        showToast(`Switched to ${tierLabel}`);
-        refreshUser();
+        showToast(data.error || "Could not start checkout.", "error");
+        return;
       }
+
+      const { checkoutUrl } = await res.json();
+      // Redirect to Stripe Checkout
+      window.location.href = checkoutUrl;
     } catch {
-      showToast("Could not update tier.", "error");
+      showToast("Could not start checkout. Please try again.", "error");
     } finally {
       setTierLoading(false);
+    }
+  }
+
+  function handleManageBilling() {
+    if (billingInfo?.billingPortalUrl) {
+      window.location.href = billingInfo.billingPortalUrl;
     }
   }
 
@@ -570,6 +594,43 @@ export default function SettingsPage() {
               </p>
             )}
 
+            {/* Billing management for subscribed users */}
+            {billingInfo?.stripeSubscriptionId && (
+              <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-text">
+                      {billingInfo.stripeSubscriptionStatus === "active"
+                        ? "Active subscription"
+                        : billingInfo.stripeSubscriptionStatus === "past_due"
+                          ? "Payment overdue"
+                          : "Subscription ending"}
+                    </p>
+                    {billingInfo.stripeCurrentPeriodEnd && (
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {billingInfo.stripeSubscriptionStatus === "active"
+                          ? "Renews"
+                          : "Access until"}{" "}
+                        {new Date(billingInfo.stripeCurrentPeriodEnd).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleManageBilling}
+                    disabled={!billingInfo.billingPortalUrl}
+                  >
+                    Manage Billing
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <TierCard
                 name="Free"
@@ -581,8 +642,10 @@ export default function SettingsPage() {
                   "7-item focus cap",
                   "Tweak, mark done, park list",
                 ]}
-                onSelect={() => handleChangeTier("free")}
+                onSelect={handleManageBilling}
                 loading={tierLoading}
+                isDowngrade={tierInfo?.tier !== "free"}
+                hasSubscription={!!billingInfo?.stripeSubscriptionId}
               />
               <TierCard
                 name="Pro"
@@ -596,14 +659,16 @@ export default function SettingsPage() {
                   "Focus Mode timer",
                   "7-item focus cap",
                 ]}
-                onSelect={() => handleChangeTier("pro")}
+                onSelect={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || "price_1T593x4kVPZipsrTEGYfEPYp")}
                 loading={tierLoading}
                 accent
+                isDowngrade={tierInfo?.tier === "pro_plus"}
+                hasSubscription={!!billingInfo?.stripeSubscriptionId}
+                onManageBilling={handleManageBilling}
               />
               <TierCard
                 name="Pro Plus"
-                price="£14.99/month"
-                priceSub="or £149/year"
+                price={billingCycle === "monthly" ? "£14.99/month" : "£149/year"}
                 tier="pro_plus"
                 current={tierInfo?.tier === "pro_plus"}
                 features={[
@@ -617,8 +682,38 @@ export default function SettingsPage() {
                   "Team plans (up to 3 people)",
                   "Voice input for brain dumps",
                 ]}
-                onSelect={() => handleChangeTier("pro_plus")}
+                onSelect={() =>
+                  handleUpgrade(
+                    billingCycle === "monthly"
+                      ? (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_MONTHLY || "price_1T595K4kVPZipsrTHBNxYUoT")
+                      : (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_ANNUAL || "price_1T596r4kVPZipsrTF2oGtiiA")
+                  )
+                }
                 loading={tierLoading}
+                billingToggle={
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setBillingCycle("monthly"); }}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                        billingCycle === "monthly"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-text-secondary border-border hover:border-primary/40"
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setBillingCycle("annual"); }}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                        billingCycle === "annual"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-text-secondary border-border hover:border-primary/40"
+                      }`}
+                    >
+                      Annual (save 17%)
+                    </button>
+                  </div>
+                }
               />
             </div>
 
@@ -993,7 +1088,6 @@ function NotifToggleRow({
 function TierCard({
   name,
   price,
-  priceSub,
   tier,
   current,
   features,
@@ -1001,10 +1095,13 @@ function TierCard({
   onSelect,
   loading,
   accent,
+  billingToggle,
+  isDowngrade,
+  hasSubscription,
+  onManageBilling,
 }: {
   name: string;
   price: string;
-  priceSub?: string;
   tier: string;
   current: boolean;
   features: string[];
@@ -1012,7 +1109,23 @@ function TierCard({
   onSelect: () => void;
   loading: boolean;
   accent?: boolean;
+  billingToggle?: React.ReactNode;
+  isDowngrade?: boolean;
+  hasSubscription?: boolean;
+  onManageBilling?: () => void;
 }) {
+  // For downgrades, direct to Stripe billing portal
+  const handleClick = () => {
+    if (isDowngrade && hasSubscription && onManageBilling) {
+      onManageBilling();
+    } else {
+      onSelect();
+    }
+  };
+
+  // Don't show action button for Free tier if user is already on Free
+  const showButton = !current && !(tier === "free" && !hasSubscription);
+
   return (
     <div
       className={`rounded-lg border p-4 ${
@@ -1032,30 +1145,24 @@ function TierCard({
           />
           <div>
             <h3 className="font-semibold text-text font-display">{name}</h3>
-          <p className="text-sm text-text-secondary">
-            {price}
-            {priceSub && (
-              <span className="text-xs text-text-tertiary ml-1">
-                ({priceSub})
-              </span>
-            )}
-          </p>
+            <p className="text-sm text-text-secondary">{price}</p>
+            {billingToggle}
           </div>
         </div>
         {current ? (
           <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
             Current plan
           </span>
-        ) : (
+        ) : showButton ? (
           <Button
             size="sm"
-            variant={accent ? "primary" : "secondary"}
-            onClick={onSelect}
+            variant={isDowngrade ? "secondary" : accent ? "primary" : "secondary"}
+            onClick={handleClick}
             loading={loading}
           >
-            {tier === "free" ? "Downgrade" : "Upgrade"}
+            {isDowngrade ? "Downgrade" : "Upgrade"}
           </Button>
-        )}
+        ) : null}
       </div>
       <ul className="space-y-1 mt-3">
         {features.map((f) => (

@@ -14,6 +14,13 @@ export interface UserDoc {
   tierUpdatedAt: Date | null;
   learnEnabled: boolean;
   notificationPrefs: NotificationPrefs;
+  // Stripe subscription tracking
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripeSubscriptionStatus: string | null; // 'active' | 'past_due' | 'canceled' | 'unpaid' | null
+  stripePriceId: string | null;
+  stripeCurrentPeriodEnd: Date | null;
+  subscriptionUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,9 +88,30 @@ function docToUser(id: string, data: FirebaseFirestore.DocumentData): UserDoc {
       ...DEFAULT_NOTIFICATION_PREFS,
       ...(data.notificationPrefs || {}),
     },
+    stripeCustomerId: data.stripeCustomerId || null,
+    stripeSubscriptionId: data.stripeSubscriptionId || null,
+    stripeSubscriptionStatus: data.stripeSubscriptionStatus || null,
+    stripePriceId: data.stripePriceId || null,
+    stripeCurrentPeriodEnd: toDateOrNull(data.stripeCurrentPeriodEnd),
+    subscriptionUpdatedAt: toDateOrNull(data.subscriptionUpdatedAt),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
+}
+
+// ─── Stripe Helpers ───
+
+export async function getUserByStripeCustomerId(
+  customerId: string
+): Promise<{ uid: string; user: UserDoc } | null> {
+  const snap = await db
+    .collection("users")
+    .where("stripeCustomerId", "==", customerId)
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return { uid: doc.id, user: docToUser(doc.id, doc.data()) };
 }
 
 function docToPlan(

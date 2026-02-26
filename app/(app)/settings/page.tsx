@@ -105,14 +105,15 @@ export default function SettingsPage() {
           if (data) setBillingInfo(data);
         })
         .catch(() => {});
+      // Load notification preferences (must be inside user guard
+      // so we have an auth session for the API call)
+      fetch("/api/settings/notifications")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) setNotifPrefs(data);
+        })
+        .catch(() => {});
     }
-    // Load notification preferences
-    fetch("/api/settings/notifications")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) setNotifPrefs(data);
-      })
-      .catch(() => {});
   }, [user]);
 
   async function handleUpgrade(priceId: string) {

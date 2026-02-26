@@ -32,25 +32,11 @@ export async function GET() {
   }
 }
 
-// PATCH: Update tier (for testing; will be replaced by Stripe webhook)
-export async function PATCH(req: NextRequest) {
-  try {
-    const auth = await getCurrentUser();
-    if (!auth) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const { tier } = await req.json();
-    const validTiers = ["free", "pro", "pro_plus"];
-    if (!validTiers.includes(tier)) {
-      return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
-    }
-
-    await updateUser(auth.userId, { tier, tierUpdatedAt: new Date() });
-
-    return NextResponse.json({ tier });
-  } catch (e) {
-    console.error("Update tier error:", e);
-    return NextResponse.json({ error: "Failed to update tier" }, { status: 500 });
-  }
+// PATCH: Tier changes are now managed exclusively by Stripe webhooks.
+// This endpoint is disabled to prevent free tier bypass.
+export async function PATCH() {
+  return NextResponse.json(
+    { error: "Tier changes are managed through billing. Visit Settings to manage your subscription." },
+    { status: 403 }
+  );
 }

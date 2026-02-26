@@ -32,8 +32,12 @@ async function isNative(): Promise<boolean> {
 }
 
 async function getLocalNotifications() {
-  const { LocalNotifications } = await import("@capacitor/local-notifications");
-  return LocalNotifications;
+  try {
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+    return LocalNotifications;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Permission handling ───
@@ -41,12 +45,13 @@ export async function checkPermission(): Promise<"granted" | "denied" | "prompt"
   if (!(await isNative())) return "granted"; // web always "granted" (no-op)
   try {
     const LN = await getLocalNotifications();
+    if (!LN) return "granted"; // plugin not available, skip gracefully
     const result = await LN.checkPermissions();
     if (result.display === "granted") return "granted";
     if (result.display === "denied") return "denied";
     return "prompt";
   } catch {
-    return "denied";
+    return "granted"; // if plugin errors, don't block the user — just save prefs
   }
 }
 
@@ -54,10 +59,11 @@ export async function requestNotificationPermission(): Promise<boolean> {
   if (!(await isNative())) return true; // web: silently succeed
   try {
     const LN = await getLocalNotifications();
+    if (!LN) return true; // plugin not available, succeed silently
     const result = await LN.requestPermissions();
     return result.display === "granted";
   } catch {
-    return false;
+    return true; // don't block the user if plugin errors
   }
 }
 
@@ -84,6 +90,7 @@ async function scheduleNotification(options: {
   if (!(await isNative())) return;
   try {
     const LN = await getLocalNotifications();
+    if (!LN) return;
     await LN.schedule({
       notifications: [
         {
@@ -105,6 +112,7 @@ async function cancelNotification(id: number) {
   if (!(await isNative())) return;
   try {
     const LN = await getLocalNotifications();
+    if (!LN) return;
     await LN.cancel({ notifications: [{ id }] });
   } catch {
     // ignore
@@ -202,6 +210,7 @@ export async function scheduleDailyCheckin(time: string) {
 
   try {
     const LN = await getLocalNotifications();
+    if (!LN) return;
 
     // Cancel existing daily check-in first
     await LN.cancel({ notifications: [{ id: ID_DAILY_CHECKIN }] });

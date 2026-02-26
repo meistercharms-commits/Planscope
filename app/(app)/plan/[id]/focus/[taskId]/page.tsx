@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
 import { getCategoryColors } from "@/lib/category-colors";
 import { parseTimeEstimate, formatTime } from "@/lib/parse-time-estimate";
+import { scheduleFocusTimer, cancelFocusTimer } from "@/lib/notifications";
 
 interface Task {
   id: string;
@@ -109,6 +110,8 @@ export default function FocusModePage({
     timeLeftRef.current = seconds;
     setHasStarted(true);
     setIsRunning(true);
+    // Schedule notification for when timer ends (in case user leaves app)
+    scheduleFocusTimer(taskId, seconds).catch(() => {});
   }
 
   function togglePause() {
@@ -127,6 +130,8 @@ export default function FocusModePage({
 
   async function handleMarkDone() {
     setMarkingDone(true);
+    // Cancel the scheduled "time's up" notification since user is done early or already here
+    cancelFocusTimer(taskId).catch(() => {});
     try {
       await fetch(`/api/plans/${id}/tasks/${taskId}`, {
         method: "PATCH",

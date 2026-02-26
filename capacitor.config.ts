@@ -23,6 +23,11 @@ const config: CapacitorConfig = {
       style: 'LIGHT',
       backgroundColor: '#FFFFFF',
     },
+    LocalNotifications: {
+      smallIcon: 'ic_notification',
+      iconColor: '#6366F1',
+      sound: 'gentle_chime.wav',
+    },
   },
   ios: {
     contentInset: 'automatic',

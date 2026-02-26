@@ -18,11 +18,34 @@ export const TIER_PRICES: Record<Tier, { monthly: string; yearly?: string }> = {
   pro_plus: { monthly: '£14.99', yearly: '£149.99/year' },
 };
 
+export interface NotificationPrefs {
+  planReady: boolean;
+  dailyCheckin: boolean;
+  dailyCheckinTime: string;
+  celebrations: boolean;
+  celebrationMode: "milestones" | "every";
+  focusTimer: boolean;
+  nudges: boolean;
+  promotional: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  planReady: true,
+  dailyCheckin: false,
+  dailyCheckinTime: "09:00",
+  celebrations: true,
+  celebrationMode: "milestones",
+  focusTimer: true,
+  nudges: false,
+  promotional: true,
+};
+
 export interface User {
   id: string;
   email: string;
   provider?: string;
   tier: Tier;
+  notificationPrefs?: NotificationPrefs;
 }
 
 export interface Plan {

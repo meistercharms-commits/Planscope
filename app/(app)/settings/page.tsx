@@ -13,13 +13,20 @@ import {
   Check as CheckIcon,
   Brain,
   Smartphone,
+  Bell,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
-import { Tier } from "@/types";
+import { Tier, NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from "@/types";
+import {
+  requestNotificationPermission,
+  checkPermission,
+  scheduleDailyCheckin,
+  cancelDailyCheckin,
+} from "@/lib/notifications";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -53,6 +60,12 @@ export default function SettingsPage() {
   const [learnEnabled, setLearnEnabled] = useState(true);
   const [learnLoading, setLearnLoading] = useState(false);
 
+  // Notifications
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>({ ...DEFAULT_NOTIFICATION_PREFS });
+  const [notifLoading, setNotifLoading] = useState<string | null>(null);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [pendingToggle, setPendingToggle] = useState<{ key: keyof NotificationPrefs; value: boolean } | null>(null);
+
   // Tier
   const [tierInfo, setTierInfo] = useState<{
     tier: Tier;
@@ -76,6 +89,13 @@ export default function SettingsPage() {
         })
         .catch(() => {});
     }
+    // Load notification preferences
+    fetch("/api/settings/notifications")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setNotifPrefs(data);
+      })
+      .catch(() => {});
   }, [user]);
 
   async function handleChangeTier(newTier: Tier) {
@@ -103,6 +123,126 @@ export default function SettingsPage() {
   }
 
   const isOAuth = user?.provider === "google" || user?.provider === "apple";
+
+  // Check if ANY notification is currently enabled
+  const anyNotifEnabled =
+    notifPrefs.planReady ||
+    notifPrefs.dailyCheckin ||
+    notifPrefs.celebrations ||
+    notifPrefs.focusTimer ||
+    notifPrefs.nudges ||
+    notifPrefs.promotional;
+
+  async function handleNotifToggle(key: keyof NotificationPrefs, value: boolean) {
+    // If enabling a notification and none are currently enabled, check permission first
+    if (value && !anyNotifEnabled) {
+      const perm = await checkPermission();
+      if (perm === "prompt") {
+        setPendingToggle({ key, value });
+        setShowPermissionModal(true);
+        return;
+      }
+      if (perm === "denied") {
+        showToast("Notifications are disabled in your device settings.", "warning");
+        return;
+      }
+    }
+
+    await saveNotifPref(key, value);
+  }
+
+  async function saveNotifPref(key: string, value: boolean | string) {
+    setNotifLoading(key);
+    const prev = { ...notifPrefs };
+    setNotifPrefs({ ...notifPrefs, [key]: value });
+
+    try {
+      const res = await fetch("/api/settings/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value }),
+      });
+      if (!res.ok) throw new Error();
+
+      const updated = await res.json();
+      setNotifPrefs(updated);
+
+      // Handle daily check-in scheduling
+      if (key === "dailyCheckin") {
+        if (value) {
+          await scheduleDailyCheckin(notifPrefs.dailyCheckinTime);
+        } else {
+          await cancelDailyCheckin();
+        }
+      }
+    } catch {
+      setNotifPrefs(prev);
+      showToast("Could not update preference.", "error");
+    } finally {
+      setNotifLoading(null);
+    }
+  }
+
+  async function handlePermissionConfirm() {
+    setShowPermissionModal(false);
+    const granted = await requestNotificationPermission();
+    if (granted && pendingToggle) {
+      await saveNotifPref(pendingToggle.key, pendingToggle.value);
+    } else if (!granted) {
+      showToast("You can enable notifications anytime in your device Settings.", "warning");
+    }
+    setPendingToggle(null);
+  }
+
+  async function handleCheckinTimeChange(time: string) {
+    setNotifLoading("dailyCheckinTime");
+    const prev = { ...notifPrefs };
+    setNotifPrefs({ ...notifPrefs, dailyCheckinTime: time });
+
+    try {
+      const res = await fetch("/api/settings/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dailyCheckinTime: time }),
+      });
+      if (!res.ok) throw new Error();
+
+      const updated = await res.json();
+      setNotifPrefs(updated);
+
+      if (notifPrefs.dailyCheckin) {
+        await scheduleDailyCheckin(time);
+      }
+    } catch {
+      setNotifPrefs(prev);
+      showToast("Could not update time.", "error");
+    } finally {
+      setNotifLoading(null);
+    }
+  }
+
+  async function handleCelebrationModeChange(mode: "milestones" | "every") {
+    setNotifLoading("celebrationMode");
+    const prev = { ...notifPrefs };
+    setNotifPrefs({ ...notifPrefs, celebrationMode: mode });
+
+    try {
+      const res = await fetch("/api/settings/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ celebrationMode: mode }),
+      });
+      if (!res.ok) throw new Error();
+
+      const updated = await res.json();
+      setNotifPrefs(updated);
+    } catch {
+      setNotifPrefs(prev);
+      showToast("Could not update preference.", "error");
+    } finally {
+      setNotifLoading(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -543,6 +683,107 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
+          {/* Section: Notifications */}
+          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+            <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
+              <Bell size={20} className="text-primary" />
+              Notifications
+            </h2>
+
+            <div className="space-y-4">
+              {/* Plan Ready */}
+              <NotifToggleRow
+                label="Plan ready"
+                description="Get notified when your weekly plan is ready to review."
+                enabled={notifPrefs.planReady}
+                loading={notifLoading === "planReady"}
+                onToggle={(val) => handleNotifToggle("planReady", val)}
+              />
+
+              {/* Daily Check-in */}
+              <NotifToggleRow
+                label="Daily check-in"
+                description="A gentle reminder of today's priorities."
+                enabled={notifPrefs.dailyCheckin}
+                loading={notifLoading === "dailyCheckin"}
+                onToggle={(val) => handleNotifToggle("dailyCheckin", val)}
+              >
+                {notifPrefs.dailyCheckin && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={notifPrefs.dailyCheckinTime}
+                      onChange={(e) => handleCheckinTimeChange(e.target.value)}
+                      className="text-sm border border-border rounded-md px-2 py-1 bg-white text-text"
+                    />
+                    <span className="text-xs text-text-secondary">daily</span>
+                  </div>
+                )}
+              </NotifToggleRow>
+
+              {/* Celebrations */}
+              <NotifToggleRow
+                label="Task celebrations"
+                description="Celebrate your progress at milestones."
+                enabled={notifPrefs.celebrations}
+                loading={notifLoading === "celebrations"}
+                onToggle={(val) => handleNotifToggle("celebrations", val)}
+              >
+                {notifPrefs.celebrations && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => handleCelebrationModeChange("milestones")}
+                      className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
+                        notifPrefs.celebrationMode === "milestones"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-text-secondary border-border hover:border-primary/40"
+                      }`}
+                    >
+                      Milestones only
+                    </button>
+                    <button
+                      onClick={() => handleCelebrationModeChange("every")}
+                      className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
+                        notifPrefs.celebrationMode === "every"
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-text-secondary border-border hover:border-primary/40"
+                      }`}
+                    >
+                      Every task
+                    </button>
+                  </div>
+                )}
+              </NotifToggleRow>
+
+              {/* Focus Timer */}
+              <NotifToggleRow
+                label="Focus timer"
+                description="Get notified when your focus session timer ends."
+                enabled={notifPrefs.focusTimer}
+                loading={notifLoading === "focusTimer"}
+                onToggle={(val) => handleNotifToggle("focusTimer", val)}
+              />
+
+              {/* Gentle Nudges */}
+              <NotifToggleRow
+                label="Gentle nudges"
+                description="A soft reminder if you haven't opened your plan in a few days."
+                enabled={notifPrefs.nudges}
+                loading={notifLoading === "nudges"}
+                onToggle={(val) => handleNotifToggle("nudges", val)}
+              />
+
+              {/* Promotional */}
+              <NotifToggleRow
+                label="Updates & offers"
+                description="Occasional updates about new features and plan limits."
+                enabled={notifPrefs.promotional}
+                loading={notifLoading === "promotional"}
+                onToggle={(val) => handleNotifToggle("promotional", val)}
+              />
+            </div>
+          </section>
+
           {/* Section 4: Data (logged-in only) */}
           {user ? (
             <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
@@ -666,6 +907,81 @@ export default function SettingsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Notification Permission Modal */}
+      <Modal
+        open={showPermissionModal}
+        onClose={() => {
+          setShowPermissionModal(false);
+          setPendingToggle(null);
+        }}
+        title="Enable notifications?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            Planscope notifications are gentle — never pushy, never guilt.
+            You control exactly which ones you receive and can turn them off anytime.
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={handlePermissionConfirm}>
+              Enable notifications
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowPermissionModal(false);
+                setPendingToggle(null);
+              }}
+            >
+              Not now
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+/* ─── Notification toggle row component ─── */
+function NotifToggleRow({
+  label,
+  description,
+  enabled,
+  loading,
+  onToggle,
+  children,
+}: {
+  label: string;
+  description: string;
+  enabled: boolean;
+  loading: boolean;
+  onToggle: (value: boolean) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="py-1">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 mr-4">
+          <p className="text-sm font-medium text-text">{label}</p>
+          <p className="text-xs text-text-secondary mt-0.5">{description}</p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={enabled}
+          onClick={() => onToggle(!enabled)}
+          disabled={loading}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            enabled ? "bg-primary" : "bg-border"
+          } ${loading ? "opacity-50" : ""}`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+              enabled ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </button>
+      </div>
+      {children}
     </div>
   );
 }

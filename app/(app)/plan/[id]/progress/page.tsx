@@ -18,6 +18,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
 import { getCategoryColors } from "@/lib/category-colors";
+import { triggerCelebration, scheduleNudges, cancelNudges } from "@/lib/notifications";
 
 interface Task {
   id: string;
@@ -66,6 +67,8 @@ export default function PlanProgressPage({
 
   useEffect(() => {
     fetchPlan();
+    // Reset nudge timers when user opens their plan (re-schedules from now)
+    cancelNudges(id).then(() => scheduleNudges(id)).catch(() => {});
   }, [id]);
 
   async function fetchPlan() {
@@ -116,6 +119,9 @@ export default function PlanProgressPage({
       }
 
       showToast(msg);
+
+      // Fire celebration notification (runs async, doesn't block UI)
+      triggerCelebration(doneCount, totalActive).catch(() => {});
     }
 
     try {

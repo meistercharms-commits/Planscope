@@ -8,6 +8,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Spinner from "@/components/ui/Spinner";
 import { Tier } from "@/types";
+import { schedulePlanReady, triggerUpgradeNotice } from "@/lib/notifications";
 
 interface TierData {
   tier: Tier;
@@ -102,13 +103,18 @@ export default function NewPlanPage() {
         const data = await res.json();
         if (data.code === "PLAN_LIMIT_REACHED" || data.code === "ACTIVE_PLAN_LIMIT") {
           setError(data.error);
+          if (data.code === "PLAN_LIMIT_REACHED") {
+            triggerUpgradeNotice(plansUsed ?? 0, plansLimit ?? 4).catch(() => {});
+          }
           setLoading(false);
           return;
         }
         throw new Error(data.error || "Failed to generate plan");
       }
 
-      const { id } = await res.json();
+      const { id, taskCount } = await res.json();
+      // Schedule "plan ready" notification (fires 5 min from now if user leaves app)
+      schedulePlanReady(id, taskCount ?? 7).catch(() => {});
       router.push(`/plan/${id}`);
     } catch (err) {
       setError((err as Error).message);

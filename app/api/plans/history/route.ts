@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getPlanHistory } from "@/lib/firestore";
 import { getUserTier, canViewHistory } from "@/lib/tiers";
 
 export async function GET() {
@@ -18,16 +18,7 @@ export async function GET() {
       );
     }
 
-    const plans = await prisma.plan.findMany({
-      where: { userId: auth.userId },
-      include: {
-        tasks: {
-          select: { id: true, status: true, section: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
+    const plans = await getPlanHistory(auth.userId, 50);
 
     const history = plans.map((plan) => {
       const activeTasks = plan.tasks.filter((t) => t.section !== "not_this_week");

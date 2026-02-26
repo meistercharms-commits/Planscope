@@ -603,7 +603,7 @@ export default function SettingsPage() {
               <TierCard
                 name="Pro Plus"
                 price="£14.99/month"
-                priceSub="or £149.99/year"
+                priceSub="or £149/year"
                 tier="pro_plus"
                 current={tierInfo?.tier === "pro_plus"}
                 features={[
@@ -845,14 +845,18 @@ export default function SettingsPage() {
                 Email support
               </a>
               <a
-                href="/privacy"
+                href="https://planscope.app/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
               >
                 <ExternalLink size={14} />
                 Privacy policy
               </a>
               <a
-                href="/terms"
+                href="https://planscope.app/terms"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
               >
                 <ExternalLink size={14} />

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getPlan, getTask, updateTask, deleteTask } from "@/lib/firestore";
 import { canAddActiveTask } from "@/lib/tiers";
 
 export async function PATCH(
@@ -14,17 +14,13 @@ export async function PATCH(
     const body = await req.json();
 
     // Verify plan ownership
-    const plan = await prisma.plan.findFirst({
-      where: { id, userId: auth.userId },
-    });
+    const plan = await getPlan(id, auth.userId);
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
     // Verify task belongs to this plan
-    const existingTask = await prisma.planTask.findFirst({
-      where: { id: taskId, planId: id },
-    });
+    const existingTask = await getTask(id, taskId);
     if (!existingTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
@@ -51,10 +47,7 @@ export async function PATCH(
     if (body.section !== undefined) updateData.section = body.section;
     if (body.timeEstimate !== undefined) updateData.timeEstimate = body.timeEstimate;
 
-    const task = await prisma.planTask.update({
-      where: { id: taskId },
-      data: updateData,
-    });
+    const task = await updateTask(id, taskId, updateData);
 
     return NextResponse.json(task);
   } catch (e) {
@@ -75,22 +68,18 @@ export async function DELETE(
 
     const { id, taskId } = await params;
 
-    const plan = await prisma.plan.findFirst({
-      where: { id, userId: auth.userId },
-    });
+    const plan = await getPlan(id, auth.userId);
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
     // Verify task belongs to this plan
-    const existingTask = await prisma.planTask.findFirst({
-      where: { id: taskId, planId: id },
-    });
+    const existingTask = await getTask(id, taskId);
     if (!existingTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    await prisma.planTask.delete({ where: { id: taskId } });
+    await deleteTask(id, taskId);
 
     return NextResponse.json({ success: true });
   } catch (e) {

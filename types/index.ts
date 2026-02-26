@@ -15,7 +15,7 @@ export const TIER_LABELS: Record<Tier, string> = {
 export const TIER_PRICES: Record<Tier, { monthly: string; yearly?: string }> = {
   free: { monthly: '£0' },
   pro: { monthly: '£7.99' },
-  pro_plus: { monthly: '£14.99', yearly: '£149.99/year' },
+  pro_plus: { monthly: '£14.99', yearly: '£149/year' },
 };
 
 export interface NotificationPrefs {

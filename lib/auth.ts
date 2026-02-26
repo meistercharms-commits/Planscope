@@ -1,122 +1,97 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/db";
+import { adminAuth } from "@/lib/firebase-admin";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
-const JWT_EXPIRY = "7d";
-const COOKIE_NAME = "planscope_token";
-const ANON_COOKIE = "planscope_anon";
+const SESSION_COOKIE = "__session";
+const SESSION_EXPIRY = 5 * 24 * 60 * 60 * 1000; // 5 days in ms
 
-export function createToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
-}
+// ─── Session Cookie Management ───
 
-export function verifyToken(token: string): { userId: string } {
-  return jwt.verify(token, JWT_SECRET) as { userId: string };
-}
+/**
+ * Create a secure session cookie from a Firebase ID token.
+ * Uses Firebase Admin's createSessionCookie (server-verified, supports revocation).
+ */
+export async function createSessionCookie(idToken: string): Promise<void> {
+  const sessionCookie = await adminAuth.createSessionCookie(idToken, {
+    expiresIn: SESSION_EXPIRY,
+  });
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
-}
-
-export async function comparePassword(
-  password: string,
-  hash: string
-): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
-
-export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
+  cookieStore.set(SESSION_COOKIE, sessionCookie, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60,
+    maxAge: SESSION_EXPIRY / 1000,
     sameSite: "lax",
   });
 }
 
-export async function getAuthCookie(): Promise<string | undefined> {
+export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
-  return cookieStore.get(COOKIE_NAME)?.value;
+  cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function clearAuthCookie() {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
-}
+// ─── Auth Checks (used by API routes) ───
 
+/**
+ * Verify session cookie and return the user's Firebase UID.
+ * Uses checkRevoked=true for maximum security.
+ */
 export async function getCurrentUser(): Promise<{ userId: string } | null> {
   try {
-    const token = await getAuthCookie();
-    if (!token) return null;
-    return verifyToken(token);
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get(SESSION_COOKIE)?.value;
+    if (!sessionCookie) return null;
+
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+    return { userId: decoded.uid };
   } catch {
     return null;
   }
 }
 
-/** Get or create an anonymous user tracked by a cookie. */
-export async function getOrCreateAnonUser(): Promise<{ userId: string }> {
-  const cookieStore = await cookies();
-  const anonId = cookieStore.get(ANON_COOKIE)?.value;
-
-  if (anonId) {
-    const user = await prisma.user.findFirst({
-      where: { email: `anon-${anonId}@planscope.local` },
-    });
-    if (user) return { userId: user.id };
-  }
-
-  // Create new anonymous user
-  const newAnonId = anonId || crypto.randomUUID();
-  const user = await prisma.user.create({
-    data: {
-      email: `anon-${newAnonId}@planscope.local`,
-      passwordHash: "anonymous",
-    },
-  });
-
-  cookieStore.set(ANON_COOKIE, newAnonId, {
-    httpOnly: true,
-    path: "/",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    sameSite: "lax",
-  });
-
-  return { userId: user.id };
-}
-
-/** Returns the authenticated user if logged in, otherwise the anonymous user. */
+/**
+ * Returns the authenticated user. Checks if they're anonymous.
+ * In Firebase Auth, anonymous users have no email and no providers.
+ */
 export async function getAuthOrAnon(): Promise<{
   userId: string;
   isAnon: boolean;
 }> {
   const auth = await getCurrentUser();
-  if (auth) return { ...auth, isAnon: false };
-
-  const anon = await getOrCreateAnonUser();
-  return { ...anon, isAnon: true };
-}
-
-/** Migrate plans from anonymous user to a real user on signup/login. */
-export async function migrateAnonPlans(realUserId: string) {
-  const cookieStore = await cookies();
-  const anonId = cookieStore.get(ANON_COOKIE)?.value;
-  if (!anonId) return;
-
-  const anonUser = await prisma.user.findFirst({
-    where: { email: `anon-${anonId}@planscope.local` },
-  });
-
-  if (anonUser) {
-    await prisma.plan.updateMany({
-      where: { userId: anonUser.id },
-      data: { userId: realUserId },
-    });
-    await prisma.user.delete({ where: { id: anonUser.id } });
+  if (!auth) {
+    throw new Error("No authentication token provided");
   }
 
-  cookieStore.delete(ANON_COOKIE);
+  try {
+    const userRecord = await adminAuth.getUser(auth.userId);
+    const isAnon =
+      userRecord.providerData.length === 0 && !userRecord.email;
+    return { userId: auth.userId, isAnon };
+  } catch {
+    return { userId: auth.userId, isAnon: true };
+  }
+}
+
+// ─── Rate Limiting (in-memory, survives within serverless instance) ───
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+export function rateLimit(
+  key: string,
+  opts: { maxRequests: number; windowMs: number }
+): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + opts.windowMs });
+    return true;
+  }
+
+  if (entry.count >= opts.maxRequests) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
 }

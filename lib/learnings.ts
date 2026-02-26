@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { getRecentPlansWithTasks } from "@/lib/firestore";
 import type { LearningsSummary, PlanLearning } from "@/types";
 
 /**
@@ -8,17 +8,8 @@ import type { LearningsSummary, PlanLearning } from "@/types";
 export async function extractPlanLearnings(
   userId: string
 ): Promise<PlanLearning[]> {
-  const plans = await prisma.plan.findMany({
-    where: {
-      userId,
-      status: { in: ["active", "completed"] },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 4,
-    include: {
-      tasks: true,
-    },
-  });
+  // Batch-fetch plans with their tasks in one go (avoids N+1 queries)
+  const plans = await getRecentPlansWithTasks(userId, 4);
 
   return plans.map((plan) => {
     const activeTasks = plan.tasks.filter(
@@ -69,7 +60,9 @@ export async function extractPlanLearnings(
 
     return {
       planId: plan.id,
-      weekStart: plan.weekStart.toISOString(),
+      weekStart: plan.weekStart instanceof Date
+        ? plan.weekStart.toISOString()
+        : new Date(plan.weekStart).toISOString(),
       metrics: {
         totalTasksPlanned: totalPlanned,
         tasksCompleted: completed.length,
@@ -144,18 +137,13 @@ export async function generateLearningSummary(
     avgPlanned >= 5 && avgCompleted / avgPlanned < 0.6;
 
   // Recurring issues: find task titles that appear in 2+ plans with low completion
+  // Plans already include tasks from the batch-fetch — no extra queries needed
+  const plans = await getRecentPlansWithTasks(userId, 4);
   const taskAppearances: Record<
     string,
     { count: number; completed: number }
   > = {};
-  for (const learning of learnings) {
-    // Re-fetch plan tasks for title analysis
-    const plan = await prisma.plan.findUnique({
-      where: { id: learning.planId },
-      include: { tasks: true },
-    });
-    if (!plan) continue;
-
+  for (const plan of plans) {
     const activeTasks = plan.tasks.filter(
       (t) => t.section === "do_first" || t.section === "this_week"
     );

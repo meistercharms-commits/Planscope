@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { getUser, getMonthlyPlanCount as firestoreMonthlyPlanCount, getActiveWeekPlanCount as firestoreActiveWeekPlanCount, getActiveTaskCount } from '@/lib/firestore';
 import { Tier, TIER_LIMITS } from '@/types';
 
 const MAX_ACTIVE_TASKS = 7;
@@ -8,12 +8,9 @@ const MAX_ACTIVE_TASKS = 7;
  * Anonymous users are always 'free'.
  */
 export async function getUserTier(userId: string): Promise<Tier> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { tier: true, email: true },
-  });
+  const user = await getUser(userId);
   if (!user) return 'free';
-  if (user.email.endsWith('@planscope.local')) return 'free';
+  if (user.provider === 'anonymous') return 'free';
   return (user.tier as Tier) || 'free';
 }
 
@@ -21,16 +18,7 @@ export async function getUserTier(userId: string): Promise<Tier> {
  * Count how many plans a user has created in the current calendar month.
  */
 export async function getMonthlyPlanCount(userId: string): Promise<number> {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-  return prisma.plan.count({
-    where: {
-      userId,
-      createdAt: { gte: monthStart, lt: monthEnd },
-    },
-  });
+  return firestoreMonthlyPlanCount(userId);
 }
 
 /**
@@ -72,12 +60,7 @@ export async function canAddActiveTask(planId: string): Promise<{
   activeCount: number;
   message?: string;
 }> {
-  const activeCount = await prisma.planTask.count({
-    where: {
-      planId,
-      section: { in: ['do_first', 'this_week'] },
-    },
-  });
+  const activeCount = await getActiveTaskCount(planId);
 
   if (activeCount >= MAX_ACTIVE_TASKS) {
     return {
@@ -94,19 +77,7 @@ export async function canAddActiveTask(planId: string): Promise<{
  * Count how many active or review plans the user has for the current week.
  */
 export async function getActiveWeekPlanCount(userId: string): Promise<number> {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
-
-  return prisma.plan.count({
-    where: {
-      userId,
-      status: { in: ['active', 'review'] },
-      weekStart: { gte: weekStart },
-    },
-  });
+  return firestoreActiveWeekPlanCount(userId);
 }
 
 /**

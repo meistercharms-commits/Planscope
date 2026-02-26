@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getUser, updateUser } from "@/lib/firestore";
 import { DEFAULT_NOTIFICATION_PREFS, NotificationPrefs } from "@/types";
 
-function parsePrefs(raw: string | null): NotificationPrefs {
+function mergePrefs(raw: Record<string, unknown> | null | undefined): NotificationPrefs {
   if (!raw) return { ...DEFAULT_NOTIFICATION_PREFS };
-  try {
-    const parsed = JSON.parse(raw);
-    return { ...DEFAULT_NOTIFICATION_PREFS, ...parsed };
-  } catch {
-    return { ...DEFAULT_NOTIFICATION_PREFS };
-  }
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...raw } as NotificationPrefs;
 }
 
 export async function GET() {
   try {
     const auth = await getAuthOrAnon();
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: { notificationPrefs: true },
-    });
+    const user = await getUser(auth.userId);
 
-    return NextResponse.json(parsePrefs(user?.notificationPrefs ?? null));
+    // Firestore stores notificationPrefs as a native map — no JSON.parse needed
+    return NextResponse.json(mergePrefs(user?.notificationPrefs as unknown as Record<string, unknown> | null));
   } catch {
     return NextResponse.json(DEFAULT_NOTIFICATION_PREFS);
   }
@@ -33,12 +26,8 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
 
     // Get existing prefs
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: { notificationPrefs: true },
-    });
-
-    const current = parsePrefs(user?.notificationPrefs ?? null);
+    const user = await getUser(auth.userId);
+    const current = mergePrefs(user?.notificationPrefs as unknown as Record<string, unknown> | null);
 
     // Merge incoming changes with current prefs
     const updated: NotificationPrefs = { ...current };
@@ -54,10 +43,8 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.nudges === "boolean") updated.nudges = body.nudges;
     if (typeof body.promotional === "boolean") updated.promotional = body.promotional;
 
-    await prisma.user.update({
-      where: { id: auth.userId },
-      data: { notificationPrefs: JSON.stringify(updated) },
-    });
+    // Firestore stores as native map — no JSON.stringify needed
+    await updateUser(auth.userId, { notificationPrefs: updated });
 
     return NextResponse.json(updated);
   } catch {

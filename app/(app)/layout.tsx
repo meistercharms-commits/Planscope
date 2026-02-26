@@ -7,8 +7,13 @@ import { useState, useEffect } from "react";
 import PlanscopeLogo from "@/components/ui/PlanscopeLogo";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, ensureAnonymous } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Ensure anonymous auth so every visitor gets a Firebase UID
+  useEffect(() => {
+    ensureAnonymous();
+  }, [ensureAnonymous]);
 
   // Configure native status bar so WebView sits below it (not behind)
   useEffect(() => {

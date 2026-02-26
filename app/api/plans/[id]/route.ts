@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getPlan, updatePlan } from "@/lib/firestore";
 
 export async function GET(
   _req: NextRequest,
@@ -9,10 +9,7 @@ export async function GET(
   try {
     const auth = await getAuthOrAnon();
     const { id } = await params;
-    const plan = await prisma.plan.findFirst({
-      where: { id, userId: auth.userId },
-      include: { tasks: { orderBy: { sortOrder: "asc" } } },
-    });
+    const plan = await getPlan(id, auth.userId);
 
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
@@ -37,9 +34,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
-    const plan = await prisma.plan.findFirst({
-      where: { id, userId: auth.userId },
-    });
+    const plan = await getPlan(id, auth.userId);
 
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
@@ -53,12 +48,10 @@ export async function PATCH(
       );
     }
 
-    const updated = await prisma.plan.update({
-      where: { id },
-      data: { status: body.status },
-      include: { tasks: { orderBy: { sortOrder: "asc" } } },
-    });
+    await updatePlan(id, { status: body.status });
 
+    // Refetch plan with tasks to return updated state
+    const updated = await getPlan(id, auth.userId);
     return NextResponse.json(updated);
   } catch (e) {
     console.error("Update plan error:", e);

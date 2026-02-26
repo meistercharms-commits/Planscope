@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, getAuthOrAnon } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { updateUser } from "@/lib/firestore";
 import { getUserTier, getMonthlyPlanCount } from "@/lib/tiers";
 import { TIER_LIMITS, TIER_LABELS, TIER_PRICES } from "@/types";
 
@@ -46,10 +46,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
-    await prisma.user.update({
-      where: { id: auth.userId },
-      data: { tier, tierUpdatedAt: new Date() },
-    });
+    await updateUser(auth.userId, { tier, tierUpdatedAt: new Date() });
 
     return NextResponse.json({ tier });
   } catch (e) {

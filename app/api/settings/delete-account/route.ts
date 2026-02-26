@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, clearAuthCookie } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCurrentUser, clearSessionCookie } from "@/lib/auth";
+import { adminAuth } from "@/lib/firebase-admin";
+import { deleteUserAndData } from "@/lib/firestore";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,11 +22,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.user.delete({
-      where: { id: auth.userId },
-    });
+    // Delete all user data from Firestore (user doc + all plans + all tasks)
+    await deleteUserAndData(auth.userId);
 
-    await clearAuthCookie();
+    // Delete Firebase Auth account
+    await adminAuth.deleteUser(auth.userId);
+
+    // Clear session cookie
+    await clearSessionCookie();
 
     return NextResponse.json({ success: true });
   } catch (e) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, comparePassword, hashPassword } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { adminAuth } from "@/lib/firebase-admin";
+import { getUser } from "@/lib/firestore";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,11 +13,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { currentPassword, newPassword } = await req.json();
+    const { newPassword } = await req.json();
 
-    if (!currentPassword || !newPassword) {
+    if (!newPassword) {
       return NextResponse.json(
-        { error: "Current password and new password are required" },
+        { error: "New password is required" },
         { status: 400 }
       );
     }
@@ -28,34 +29,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-    });
-
+    const user = await getUser(auth.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (!user.passwordHash) {
+    // Only email/password users can change password
+    if (user.provider !== "email") {
       return NextResponse.json(
         { error: "Password changes are not available for OAuth accounts" },
         { status: 400 }
       );
     }
 
-    const valid = await comparePassword(currentPassword, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json(
-        { error: "Current password is incorrect" },
-        { status: 401 }
-      );
-    }
-
-    const newHash = await hashPassword(newPassword);
-    await prisma.user.update({
-      where: { id: auth.userId },
-      data: { passwordHash: newHash },
-    });
+    // Update password in Firebase Auth
+    await adminAuth.updateUser(auth.userId, { password: newPassword });
 
     return NextResponse.json({ success: true });
   } catch (e) {

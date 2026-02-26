@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-
-function tryParseJSON(value: string | null): unknown {
-  if (!value) return null;
-  try { return JSON.parse(value); } catch { return value; }
-}
+import { getUserWithAllPlans } from "@/lib/firestore";
 
 export async function GET() {
   try {
@@ -17,27 +12,13 @@ export async function GET() {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-        plans: {
-          include: {
-            tasks: {
-              orderBy: { sortOrder: "asc" },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
+    const data = await getUserWithAllPlans(auth.userId);
 
-    if (!user) {
+    if (!data) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const { user, plans } = data;
 
     const exportData = {
       exportedAt: new Date().toISOString(),
@@ -47,14 +28,14 @@ export async function GET() {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
-      plans: user.plans.map((plan) => ({
+      plans: plans.map((plan) => ({
         id: plan.id,
         mode: plan.mode,
         weekStart: plan.weekStart,
         weekEnd: plan.weekEnd,
         originalDump: plan.originalDump,
-        parsedDump: tryParseJSON(plan.parsedDump),
-        constraints: tryParseJSON(plan.constraints),
+        parsedDump: plan.parsedDump,
+        constraints: plan.constraints,
         status: plan.status,
         createdAt: plan.createdAt,
         updatedAt: plan.updatedAt,

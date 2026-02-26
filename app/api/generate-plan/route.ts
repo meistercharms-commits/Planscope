@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
 import { generateFullPlan } from "@/lib/llm";
-import { prisma } from "@/lib/db";
+import { getUser, getPlan, createPlanWithTasks } from "@/lib/firestore";
 import { rateLimit } from "@/lib/rate-limit";
 import { canCreatePlan, canCreateAdditionalPlan, getUserTier, canUseRecurring } from "@/lib/tiers";
 import { PlanMeta } from "@/types";
@@ -77,10 +77,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const sourcePlan = await prisma.plan.findFirst({
-        where: { id: copyFromPlanId, userId: auth.userId },
-        include: { tasks: true },
-      });
+      const sourcePlan = await getPlan(copyFromPlanId, auth.userId);
 
       if (!sourcePlan) {
         return NextResponse.json({ error: "Source plan not found" }, { status: 404 });
@@ -95,37 +92,32 @@ export async function POST(req: NextRequest) {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
 
-      const savedPlan = await prisma.plan.create({
-        data: {
-          userId: auth.userId,
-          mode: planMode,
-          label: label || null,
-          weekStart,
-          weekEnd,
-          originalDump: `[Copied from plan ${copyFromPlanId}]`,
-          parsedDump: sourcePlan.parsedDump,
-          planMeta: sourcePlan.planMeta,
-          constraints: JSON.stringify(constraints),
-          status: "review",
-          tasks: {
-            create: sourcePlan.tasks.map((task, i) => ({
-              title: task.title,
-              section: task.section,
-              timeEstimate: task.timeEstimate,
-              effort: task.effort,
-              urgency: task.urgency,
-              category: task.category,
-              context: task.context,
-              status: "pending",
-              sortOrder: i,
-            })),
-          },
-        },
-        include: { tasks: { orderBy: { sortOrder: "asc" } } },
+      const planId = await createPlanWithTasks({
+        userId: auth.userId,
+        mode: planMode,
+        label: label || null,
+        weekStart,
+        weekEnd,
+        originalDump: `[Copied from plan ${copyFromPlanId}]`,
+        parsedDump: sourcePlan.parsedDump || {},
+        planMeta: sourcePlan.planMeta || {},
+        constraints,
+        status: "review",
+        tasks: sourcePlan.tasks.map((task, i) => ({
+          title: task.title,
+          section: task.section,
+          timeEstimate: task.timeEstimate || null,
+          effort: task.effort,
+          urgency: task.urgency || "medium",
+          category: task.category,
+          context: task.context || null,
+          status: "pending",
+          sortOrder: i,
+        })),
       });
 
       return NextResponse.json({
-        id: savedPlan.id,
+        id: planId,
         plansRemaining: planCheck.remaining === Infinity ? null : planCheck.remaining - 1,
         plansLimit: planCheck.limit === Infinity ? null : planCheck.limit,
       });
@@ -147,10 +139,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has learning enabled and fetch learnings
-    const userRecord = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: { learnEnabled: true },
-    });
+    const userRecord = await getUser(auth.userId);
     const userLearnings =
       userRecord?.learnEnabled !== false
         ? await generateLearningSummary(auth.userId)
@@ -205,65 +194,63 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Save plan to database
-    const savedPlan = await prisma.plan.create({
-      data: {
-        userId: auth.userId,
-        mode: planMode,
-        label: label || null,
-        weekStart,
-        weekEnd,
-        originalDump: dump,
-        parsedDump: JSON.stringify(parsed),
-        planMeta: JSON.stringify(planMeta),
-        constraints: JSON.stringify(constraints),
-        status: "review",
-        tasks: {
-          create: [
-            // Do First tasks
-            ...(plan.do_first || []).map((task, i) => ({
-              title: task.title,
-              section: "do_first",
-              timeEstimate: task.time_estimate || null,
-              effort: findParsedEffort(parsed.tasks, task.title),
-              urgency: findParsedUrgency(parsed.tasks, task.title),
-              category: findParsedCategory(parsed.tasks, task.title),
-              context: [task.why, task.context].filter(Boolean).join(" | "),
-              status: "pending",
-              sortOrder: i,
-            })),
-            // This Week tasks
-            ...(plan.this_week || []).map((task, i) => ({
-              title: task.title,
-              section: "this_week",
-              timeEstimate: task.time_estimate || null,
-              effort: findParsedEffort(parsed.tasks, task.title),
-              urgency: findParsedUrgency(parsed.tasks, task.title),
-              category: task.category || "other",
-              context: task.notes || null,
-              status: "pending",
-              sortOrder: (plan.do_first?.length || 0) + i,
-            })),
-            // Not This Week tasks
-            ...(plan.not_this_week || []).map((task, i) => ({
-              title: task.title,
-              section: "not_this_week",
-              timeEstimate: null,
-              effort: findParsedEffort(parsed.tasks, task.title),
-              urgency: findParsedUrgency(parsed.tasks, task.title),
-              category: findParsedCategory(parsed.tasks, task.title),
-              context: [task.reason, task.validation].filter(Boolean).join(" | "),
-              status: "pending",
-              sortOrder: 100 + i,
-            })),
-          ],
-        },
-      },
-      include: { tasks: { orderBy: { sortOrder: "asc" } } },
+    // Build tasks array — native Firestore maps, no JSON.stringify needed
+    const tasks = [
+      // Do First tasks
+      ...(plan.do_first || []).map((task, i) => ({
+        title: task.title,
+        section: "do_first",
+        timeEstimate: task.time_estimate || null,
+        effort: findParsedEffort(parsed.tasks, task.title),
+        urgency: findParsedUrgency(parsed.tasks, task.title),
+        category: findParsedCategory(parsed.tasks, task.title),
+        context: [task.why, task.context].filter(Boolean).join(" | ") || null,
+        status: "pending",
+        sortOrder: i,
+      })),
+      // This Week tasks
+      ...(plan.this_week || []).map((task, i) => ({
+        title: task.title,
+        section: "this_week",
+        timeEstimate: task.time_estimate || null,
+        effort: findParsedEffort(parsed.tasks, task.title),
+        urgency: findParsedUrgency(parsed.tasks, task.title),
+        category: task.category || "other",
+        context: task.notes || null,
+        status: "pending",
+        sortOrder: (plan.do_first?.length || 0) + i,
+      })),
+      // Not This Week tasks
+      ...(plan.not_this_week || []).map((task, i) => ({
+        title: task.title,
+        section: "not_this_week",
+        timeEstimate: null,
+        effort: findParsedEffort(parsed.tasks, task.title),
+        urgency: findParsedUrgency(parsed.tasks, task.title),
+        category: findParsedCategory(parsed.tasks, task.title),
+        context: [task.reason, task.validation].filter(Boolean).join(" | ") || null,
+        status: "pending",
+        sortOrder: 100 + i,
+      })),
+    ];
+
+    // Save plan to Firestore (batched write: plan doc + all task docs)
+    const planId = await createPlanWithTasks({
+      userId: auth.userId,
+      mode: planMode,
+      label: label || null,
+      weekStart,
+      weekEnd,
+      originalDump: dump,
+      parsedDump: parsed as unknown as Record<string, unknown>,
+      planMeta: planMeta as unknown as Record<string, unknown>,
+      constraints,
+      status: "review",
+      tasks,
     });
 
     return NextResponse.json({
-      id: savedPlan.id,
+      id: planId,
       plansRemaining: planCheck.remaining === Infinity ? null : planCheck.remaining - 1,
       plansLimit: planCheck.limit === Infinity ? null : planCheck.limit,
     });

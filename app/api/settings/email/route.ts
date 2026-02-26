@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, comparePassword } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { adminAuth } from "@/lib/firebase-admin";
+import { getUser, getUserByEmail, updateUser } from "@/lib/firestore";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,47 +13,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, currentPassword } = await req.json();
+    const { email } = await req.json();
 
-    if (!email || !currentPassword) {
+    if (!email) {
       return NextResponse.json(
-        { error: "New email and current password are required" },
+        { error: "New email is required" },
         { status: 400 }
       );
     }
 
     const trimmedEmail = email.trim().toLowerCase();
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedEmail) || trimmedEmail.length > 254 || trimmedEmail.endsWith("@planscope.local")) {
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedEmail) || trimmedEmail.length > 254) {
       return NextResponse.json(
         { error: "Please enter a valid email address" },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-    });
-
+    const user = await getUser(auth.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (!user.passwordHash) {
+    // Only email/password users can change email
+    if (user.provider !== "email") {
       return NextResponse.json(
         { error: "Email changes are not available for OAuth accounts" },
         { status: 400 }
       );
     }
 
-    const valid = await comparePassword(currentPassword, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json(
-        { error: "Password is incorrect" },
-        { status: 401 }
-      );
-    }
-
-    const existing = await prisma.user.findUnique({ where: { email: trimmedEmail } });
+    // Check if email already in use
+    const existing = await getUserByEmail(trimmedEmail);
     if (existing) {
       return NextResponse.json(
         { error: "An account with this email already exists" },
@@ -60,10 +52,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.user.update({
-      where: { id: auth.userId },
-      data: { email: trimmedEmail },
-    });
+    // Update email in Firebase Auth and Firestore
+    await adminAuth.updateUser(auth.userId, { email: trimmedEmail });
+    await updateUser(auth.userId, { email: trimmedEmail });
 
     return NextResponse.json({ success: true, email: trimmedEmail });
   } catch (e) {

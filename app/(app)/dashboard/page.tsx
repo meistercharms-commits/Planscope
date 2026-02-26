@@ -1,54 +1,23 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { cookies } from "next/headers";
-import { prisma } from "@/lib/db";
+import { getActivePlans } from "@/lib/firestore";
 import { getUserTier, canHaveMultipleActivePlans } from "@/lib/tiers";
 import DashboardMultiPlan from "./DashboardMultiPlan";
 import DashboardEmpty from "./DashboardEmpty";
 
 export default async function DashboardPage() {
-  // Check for existing auth — don't create anon user here (can't set cookies in Server Components)
+  // Check for existing auth via session cookie
   const loggedIn = await getCurrentUser();
-  let userId: string | null = null;
-
-  if (loggedIn) {
-    userId = loggedIn.userId;
-  } else {
-    // Check for existing anon cookie without creating one
-    const cookieStore = await cookies();
-    const anonId = cookieStore.get("planscope_anon")?.value;
-    if (anonId) {
-      const anonUser = await prisma.user.findFirst({
-        where: { email: `anon-${anonId}@planscope.local` },
-      });
-      if (anonUser) userId = anonUser.id;
-    }
-  }
 
   // No user found at all — show empty state
-  if (!userId) return <DashboardEmpty />;
+  // (Firebase anonymous auth is handled client-side via ensureAnonymous in layout)
+  if (!loggedIn) return <DashboardEmpty />;
 
-  const auth = { userId };
+  const auth = { userId: loggedIn.userId };
 
   const tier = await getUserTier(auth.userId);
 
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
-
-  const activePlans = await prisma.plan.findMany({
-    where: {
-      userId: auth.userId,
-      status: { in: ["active", "review"] },
-      weekStart: { gte: weekStart },
-    },
-    include: {
-      tasks: { select: { id: true, status: true, section: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const activePlans = await getActivePlans(auth.userId);
 
   // No active plans: show empty state with CTA
   if (activePlans.length === 0) return <DashboardEmpty />;

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getUser, updateUser } from "@/lib/firestore";
 
 export async function GET() {
   try {
     const auth = await getAuthOrAnon();
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
-      select: { learnEnabled: true },
-    });
+    const user = await getUser(auth.userId);
 
     return NextResponse.json({ learnEnabled: user?.learnEnabled ?? true });
   } catch {
@@ -29,10 +26,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    await prisma.user.update({
-      where: { id: auth.userId },
-      data: { learnEnabled: enabled },
-    });
+    await updateUser(auth.userId, { learnEnabled: enabled });
 
     return NextResponse.json({ learnEnabled: enabled });
   } catch {

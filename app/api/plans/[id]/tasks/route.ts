@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getPlan, createTask } from "@/lib/firestore";
 import { canAddActiveTask } from "@/lib/tiers";
 
 export async function POST(
@@ -12,10 +12,7 @@ export async function POST(
     const { id } = await params;
     const body = await req.json();
 
-    const plan = await prisma.plan.findFirst({
-      where: { id, userId: auth.userId },
-      include: { tasks: true },
-    });
+    const plan = await getPlan(id, auth.userId);
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
@@ -34,17 +31,16 @@ export async function POST(
 
     const maxOrder = Math.max(0, ...plan.tasks.map((t) => t.sortOrder));
 
-    const task = await prisma.planTask.create({
-      data: {
-        planId: id,
-        title: body.title,
-        section: body.section || "this_week",
-        timeEstimate: body.timeEstimate || null,
-        effort: "medium",
-        category: "other",
-        status: "pending",
-        sortOrder: maxOrder + 1,
-      },
+    const task = await createTask(id, {
+      title: body.title,
+      section: body.section || "this_week",
+      timeEstimate: body.timeEstimate || null,
+      effort: "medium",
+      urgency: "medium",
+      category: "other",
+      context: null,
+      status: "pending",
+      sortOrder: maxOrder + 1,
     });
 
     return NextResponse.json(task, { status: 201 });

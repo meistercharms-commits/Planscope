@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     // For development, point to your local dev server:
-    url: 'http://localhost:3000',
+    // Use your Mac's local IP so real devices can connect over WiFi
+    url: 'http://172.20.10.3:3000',
     // For production, replace with your deployed URL:
     // url: 'https://planscope.co',
     androidScheme: 'https',

@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planscope — App Store Screenshots V4</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #2E8B6A;
+      --primary-dark: #26714F;
+      --primary-light: #E8F6F3;
+      --secondary: #4A90B0;
+      --secondary-light: #EBF2F9;
+      --accent: #E8943D;
+      --bg: #FAFAF9;
+      --bg-subtle: #F3F3F2;
+      --bg-card: #FFFFFF;
+      --border: #E8E8E6;
+      --text: #404040;
+      --text-secondary: #808080;
+
+      --shot-w: 1290px;
+      --shot-h: 2796px;
+      --scale: 0.22;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #111;
+      color: #fff;
+      padding: 40px;
+    }
+
+    h1 { text-align: center; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: #888; margin-bottom: 40px; font-size: 14px; }
+
+    .screenshots-row {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .screenshot-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .screenshot-label {
+      font-size: 13px;
+      color: #aaa;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .screenshot-frame {
+      width: calc(var(--shot-w) * var(--scale));
+      height: calc(var(--shot-h) * var(--scale));
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .screenshot-frame:hover { transform: scale(1.02); }
+
+    .shot {
+      width: var(--shot-w);
+      height: var(--shot-h);
+      transform: scale(var(--scale));
+      transform-origin: top left;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ===== LIGHTER PASTEL GRADIENTS ===== */
+    .bg-1 {
+      background: linear-gradient(165deg, #E8F8F0 0%, #B8E4D0 25%, #7CCBAA 55%, #4EAD88 85%, #3D9A78 100%);
+    }
+    .bg-2 {
+      background: linear-gradient(165deg, #E0F4ED 0%, #A8DBCA 20%, #6DC0A4 50%, #4AA98A 80%, #389577 100%);
+    }
+    .bg-3 {
+      background: linear-gradient(165deg, #EAF6F1 0%, #C2E8D8 20%, #85CEB2 50%, #52B38E 80%, #3A9D76 100%);
+    }
+    .bg-4 {
+      background: linear-gradient(165deg, #E5F5EF 0%, #B0DFC8 25%, #72C4A2 55%, #48A884 85%, #3A9474 100%);
+    }
+    .bg-5 {
+      background: linear-gradient(165deg, #ECF9F3 0%, #BDE6D4 20%, #7DD1AF 50%, #50B590 80%, #3EA07A 100%);
+    }
+
+    /* Subtle light orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .orb-glow-1 { width: 900px; height: 900px; top: -200px; right: -200px; background: rgba(255,255,255,0.25); filter: blur(150px); }
+    .orb-glow-2 { width: 600px; height: 600px; bottom: 600px; left: -100px; background: rgba(255,255,255,0.15); filter: blur(120px); }
+    .orb-glow-3 { width: 500px; height: 500px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.1); filter: blur(100px); }
+
+    /* ===== MARKETING TEXT ===== */
+    .marketing {
+      position: absolute;
+      z-index: 10;
+      text-align: center;
+      width: 100%;
+      padding: 0 80px;
+    }
+    .marketing.top {
+      top: 140px;
+    }
+    .marketing.bottom {
+      bottom: 160px;
+    }
+    .marketing-logo {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 36px;
+      display: block;
+    }
+    .marketing h2 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      font-size: 116px;
+      line-height: 1.05;
+      color: #1a5c42;
+      margin-bottom: 28px;
+      letter-spacing: -3px;
+    }
+    .marketing p {
+      font-size: 44px;
+      color: rgba(30, 80, 58, 0.6);
+      font-weight: 600;
+      line-height: 1.3;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* ===== PHONE ===== */
+    .phone {
+      position: absolute;
+      width: 860px;
+      height: 1720px;
+      background: #1a1a1a;
+      border-radius: 68px;
+      padding: 12px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.08);
+      z-index: 5;
+    }
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border-radius: 58px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Dynamic Island */
+    .phone-screen::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 190px;
+      height: 54px;
+      background: #1a1a1a;
+      border-radius: 30px;
+      z-index: 100;
+    }
+
+    /* Phone positions */
+    .phone.bottom-center { left: 50%; bottom: -80px; transform: translateX(-50%); }
+    .phone.bottom-right { right: -40px; bottom: -80px; transform: rotate(3deg); }
+    .phone.bottom-left { left: -40px; bottom: -80px; transform: rotate(-3deg); }
+    .phone.top-center { left: 50%; top: 120px; transform: translateX(-50%); }
+    .phone.top-right { right: -20px; top: 140px; transform: rotate(2deg); }
+
+    /* Status bar */
+    .status-bar {
+      height: 90px;
+      background: var(--bg-card);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 48px 10px;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* App header */
+    .app-header {
+      height: 96px;
+      background: var(--bg-card);
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 34px;
+    }
+    .app-header-title {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .app-header-logo { width: 32px; height: 32px; }
+    .header-icon { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
+
+    /* ===== FLOATING CARDS ===== */
+    .floating-card {
+      position: absolute;
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px 30px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: 'Inter', sans-serif;
+    }
+    .floating-card .fc-checkbox {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .floating-card .fc-checkbox.done { background: var(--primary); }
+    .floating-card .fc-checkbox.undone { border: 3px solid var(--border); }
+    .floating-card .fc-text { font-size: 28px; font-weight: 600; color: var(--text); }
+    .floating-card .fc-text.done-text { text-decoration: line-through; color: var(--text-secondary); }
+    .floating-card .fc-cat {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 20px;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 100px;
+      margin-top: 4px;
+    }
+    .floating-card .fc-cat.work { background: var(--secondary-light); color: #3A7095; }
+    .floating-card .fc-cat.health { background: var(--primary-light); color: var(--primary); }
+    .floating-card .fc-cat.home { background: #FFF8F0; color: #B86520; }
+    .floating-card .fc-cat.money { background: #F5F0FF; color: #7B5EA7; }
+
+    /* Floating plan card */
+    .floating-plan {
+      position: absolute;
+      background: #fff;
+      border-radius: 20px;
+      padding: 28px 32px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+      z-index: 20;
+      font-family: 'Inter', sans-serif;
+      width: 480px;
+    }
+    .floating-plan .fp-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .floating-plan .fp-label.work { background: var(--secondary-light); color: #3A7095; }
+    .floating-plan .fp-label.personal { background: var(--primary-light); color: var(--primary); }
+    .floating-plan .fp-label.side { background: #FFF3E0; color: #B86520; }
+    .floating-plan .fp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .floating-plan .fp-title { font-size: 28px; font-weight: 700; color: var(--text); }
+    .floating-plan .fp-count { font-size: 22px; color: var(--text-secondary); }
+    .floating-plan .fp-track { height: 6px; background: var(--border); border-radius: 100px; overflow: hidden; }
+    .floating-plan .fp-fill { height: 100%; background: var(--primary); border-radius: 100px; }
+
+    /* Floating brain dump bubble */
+    .floating-bubble {
+      position: absolute;
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px 28px;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.05);
+      z-index: 20;
+      font-family: 'Inter', sans-serif;
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--text);
+      max-width: 460px;
+    }
+
+    /* Floating progress badge */
+    .floating-badge {
+      position: absolute;
+      background: var(--primary);
+      border-radius: 100px;
+      padding: 18px 36px;
+      box-shadow: 0 12px 36px rgba(46,139,106,0.35);
+      z-index: 20;
+      font-family: 'Inter', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ===== PROGRESS BAR (matches app) ===== */
+    .app-progress-bar {
+      background: var(--primary-light);
+      padding: 14px 34px 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    .app-progress-text {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .app-progress-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .app-progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 100px;
+    }
+
+    /* Content */
+    .app-content { padding: 32px; overflow: hidden; }
+
+    /* ===== REUSABLE ===== */
+    .section-title {
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    .section-subtitle {
+      font-size: 26px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    /* Segment pills */
+    .seg-group { margin-bottom: 24px; }
+    .seg-label { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+    .seg-row { display: flex; gap: 8px; }
+    .seg-pill {
+      flex: 1;
+      padding: 18px 6px;
+      border-radius: 100px;
+      font-size: 22px;
+      font-weight: 600;
+      text-align: center;
+      border: 2px solid var(--border);
+      background: #fff;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .seg-pill.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .seg-pill .icon { width: 24px; height: 24px; flex-shrink: 0; }
+
+    /* Textarea */
+    .mock-textarea {
+      width: 100%;
+      min-height: 220px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      font-size: 24px;
+      line-height: 1.6;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 24px;
+    }
+
+    /* Buttons */
+    .mock-btn {
+      width: 100%;
+      padding: 24px;
+      border-radius: 12px;
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .mock-btn.primary { background: var(--primary); color: #fff; }
+    .mock-btn.secondary { background: var(--bg); color: var(--text); border: 2px solid var(--border); }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+    .section-header .icon { width: 28px; height: 28px; }
+    .section-name { font-size: 26px; font-weight: 700; color: var(--text); }
+    .section-count { font-size: 20px; color: var(--text-secondary); margin-left: auto; }
+
+    /* Category headers */
+    .cat-header { display: flex; align-items: center; gap: 8px; margin: 18px 0 10px; }
+    .cat-header .icon { width: 20px; height: 20px; }
+    .cat-label { font-size: 22px; font-weight: 600; color: var(--text); }
+    .cat-count { font-size: 18px; color: var(--text-secondary); }
+
+    /* Task cards */
+    .task-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .task-checkbox {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .task-checkbox.done { background: var(--primary); border-color: var(--primary); }
+    .task-checkbox.done svg { width: 16px; height: 16px; }
+    .task-info { flex: 1; }
+    .task-text { font-size: 24px; color: var(--text); font-weight: 500; line-height: 1.3; }
+    .task-text.done-text { text-decoration: line-through; color: var(--text-secondary); }
+    .task-meta { font-size: 18px; color: var(--text-secondary); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+    .task-meta .icon { width: 14px; height: 14px; }
+
+    /* Reality card */
+    .reality-card {
+      background: var(--bg-subtle);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 18px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .reality-card .icon { width: 26px; height: 26px; flex-shrink: 0; margin-top: 2px; }
+    .reality-text { font-size: 22px; color: var(--text-secondary); line-height: 1.45; font-style: italic; }
+
+    /* Plan cards */
+    .plan-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 26px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .plan-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .plan-card-title { font-size: 28px; font-weight: 700; color: var(--text); }
+    .plan-card-count { font-size: 22px; color: var(--text-secondary); font-weight: 500; }
+    .plan-progress-track { height: 6px; background: var(--border); border-radius: 100px; overflow: hidden; }
+    .plan-progress-fill { height: 100%; background: var(--primary); border-radius: 100px; }
+
+    /* Plan labels */
+    .plan-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .plan-label .icon { width: 16px; height: 16px; }
+    .plan-label.work { background: var(--secondary-light); color: #3A7095; }
+    .plan-label.personal { background: var(--primary-light); color: var(--primary); }
+    .plan-label.side { background: #FFF3E0; color: #B86520; }
+
+    /* New plan btn */
+    .new-plan-btn {
+      border: 3px dashed var(--border);
+      border-radius: 14px;
+      padding: 26px;
+      color: var(--primary);
+      font-size: 26px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    /* Celebrate */
+    .celebrate-card {
+      text-align: center;
+      padding: 18px;
+      background: var(--primary-light);
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    .celebrate-card p { font-size: 22px; color: var(--primary); font-weight: 600; }
+
+    /* Export info */
+    .export-info {
+      text-align: center;
+      color: #555;
+      font-size: 13px;
+      margin-top: 20px;
+      padding: 20px;
+      border-top: 1px solid #333;
+    }
+    .export-info code { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #ccc; }
+
+    .icon { display: inline-block; vertical-align: middle; }
+    .icon svg { width: 100%; height: 100%; }
+
+    /* Planscope logo SVG (dark version for light backgrounds) */
+    .marketing-logo-dark { display: block; margin: 0 auto 36px; }
+  </style>
+</head>
+<body>
+
+<h1>Planscope — App Store Screenshots V4</h1>
+<p class="subtitle">1290 x 2796 px (6.7" iPhone). Right-click a .shot div → "Capture node screenshot".</p>
+
+<div class="screenshots-row">
+
+  <!-- ===== 1: Brain Dump — TEXT TOP, phone bottom-center, floating bubbles ===== -->
+  <div class="screenshot-wrapper">
+    <div class="screenshot-label">1. Brain Dump</div>
+    <div class="screenshot-frame">
+      <div class="shot bg-1" id="shot1">
+        <div class="orb orb-glow-1"></div>
+        <div class="orb orb-glow-2"></div>
+
+        <div class="marketing top" style="top: 160px;">
+          <svg class="marketing-logo-dark" width="90" height="90" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="#1a5c42" stroke-width="2" opacity="0.5"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.7"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.4"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+          <h2>Dump it all.<br>We'll sort it.</h2>
+          <p>Type everything on your mind. AI builds your week.</p>
+        </div>
+
+        <!-- Floating brain dump bubbles -->
+        <div class="floating-bubble" style="top: 1050px; left: 60px; transform: rotate(-2deg);">
+          Finish Q2 proposal for client
+        </div>
+        <div class="floating-bubble" style="top: 1160px; right: 60px; transform: rotate(1.5deg);">
+          Book dentist appointment
+        </div>
+        <div class="floating-bubble" style="top: 1280px; left: 100px; transform: rotate(1deg);">
+          30 min run at least twice
+        </div>
+
+        <div class="phone bottom-center">
+          <div class="phone-screen">
+            <div class="status-bar"><span>9:41</span><span></span></div>
+            <div class="app-header">
+              <div class="app-header-title"><svg class="app-header-logo" width="32" height="32" viewBox="0 0 100 100" fill="none"><path d="M0 50C0 22.4 22.4 0 50 0C77.6 0 100 22.4 100 50C100 77.6 77.6 100 50 100C22.4 100 0 77.6 0 50Z" fill="white"/><path d="M50 100V98.8C23 98.8 1.2 77 1.2 50H-1.2C-1.2 78.3 21.7 101.2 50 101.2V100ZM100 50H98.8C98.8 77 77 98.8 50 98.8V101.2C78.3 101.2 101.2 78.3 101.2 50H100ZM50 0V1.2C77 1.2 98.8 23 98.8 50H101.2C101.2 21.7 78.3-1.2 50-1.2V0ZM50 0V-1.2C21.7-1.2-1.2 21.7-1.2 50H1.2C1.2 23 23 1.2 50 1.2V0Z" fill="#2E8B6A"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.75"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.5"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>Planscope</div>
+              <div class="header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#808080" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            </div>
+            <div class="app-content">
+              <div class="section-title">What's on your mind?</div>
+              <div class="section-subtitle">Dump everything. We'll make sense of it.</div>
+
+              <div class="seg-group">
+                <div class="seg-label">Mode</div>
+                <div class="seg-row">
+                  <div class="seg-pill"><span class="icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><path d="M36 12H12C10.3 12 9 13.3 9 15V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V15C39 13.3 37.7 12 36 12Z" stroke="#808080" stroke-width="3"/><path d="M9 19.5H39" stroke="#808080" stroke-width="3" stroke-linecap="round"/><path d="M16.5 9V15M31.5 9V15" stroke="#808080" stroke-width="3" stroke-linecap="round"/><rect x="20.2" y="25.5" width="6" height="7.5" rx="0.8" fill="#808080"/></svg></span>Today</div>
+                  <div class="seg-pill active"><span class="icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><path d="M36 12H12C10.3 12 9 13.3 9 15V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V15C39 13.3 37.7 12 36 12Z" stroke="#2E8B6A" stroke-width="3"/><path d="M9 19.5H39" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M16.5 9V15M31.5 9V15" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M18 28.5L21 31.5L28.5 24" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>This Week</div>
+                </div>
+              </div>
+
+              <div class="mock-textarea">
+                Finish Q2 proposal for client review<br>
+                Book dentist appointment<br>
+                Reply to Sarah about dinner<br>
+                Code review for Tom's PR<br>
+                Pay electricity bill<br>
+                30 min run at least twice<br>
+                Start meal prepping on Sunday
+              </div>
+
+              <div class="seg-group">
+                <div class="seg-label">Time available</div>
+                <div class="seg-row">
+                  <div class="seg-pill"><span class="icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><rect x="12" y="30" width="6" height="10" rx="1" fill="#808080"/><rect x="22.5" y="21" width="6" height="19" rx="1" stroke="#808080" stroke-width="2.5" opacity="0.25"/><rect x="33" y="12" width="6" height="28" rx="1" stroke="#808080" stroke-width="2.5" opacity="0.25"/></svg></span>Low</div>
+                  <div class="seg-pill active"><span class="icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><rect x="12" y="30" width="6" height="10" rx="1" fill="#2E8B6A"/><rect x="22.5" y="21" width="6" height="19" rx="1" fill="#2E8B6A"/><rect x="33" y="12" width="6" height="28" rx="1" stroke="#2E8B6A" stroke-width="2.5" opacity="0.25"/></svg></span>Medium</div>
+                  <div class="seg-pill"><span class="icon"><svg width="24" height="24" viewBox="0 0 48 48" fill="none"><rect x="12" y="30" width="6" height="10" rx="1" fill="#808080"/><rect x="22.5" y="21" width="6" height="19" rx="1" fill="#808080"/><rect x="33" y="12" width="6" height="28" rx="1" fill="#808080"/></svg></span>High</div>
+                </div>
+              </div>
+
+              <div style="margin-top: 24px;">
+                <div class="mock-btn primary">Make me a plan</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2: Plan Review — TEXT BOTTOM, phone top-right tilted, floating tasks left ===== -->
+  <div class="screenshot-wrapper">
+    <div class="screenshot-label">2. AI Plan</div>
+    <div class="screenshot-frame">
+      <div class="shot bg-2" id="shot2">
+        <div class="orb orb-glow-1"></div>
+        <div class="orb orb-glow-3"></div>
+
+        <div class="phone top-right">
+          <div class="phone-screen">
+            <div class="status-bar"><span>9:41</span><span></span></div>
+            <div class="app-header">
+              <div class="app-header-title"><svg class="app-header-logo" width="32" height="32" viewBox="0 0 100 100" fill="none"><path d="M0 50C0 22.4 22.4 0 50 0C77.6 0 100 22.4 100 50C100 77.6 77.6 100 50 100C22.4 100 0 77.6 0 50Z" fill="white"/><path d="M50 100V98.8C23 98.8 1.2 77 1.2 50H-1.2C-1.2 78.3 21.7 101.2 50 101.2V100ZM100 50H98.8C98.8 77 77 98.8 50 98.8V101.2C78.3 101.2 101.2 78.3 101.2 50H100ZM50 0V1.2C77 1.2 98.8 23 98.8 50H101.2C101.2 21.7 78.3-1.2 50-1.2V0ZM50 0V-1.2C21.7-1.2-1.2 21.7-1.2 50H1.2C1.2 23 23 1.2 50 1.2V0Z" fill="#2E8B6A"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.75"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.5"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>Planscope</div>
+              <div class="header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#808080" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            </div>
+            <div class="app-content">
+              <div class="section-title">Focus week — keep it tight</div>
+              <div style="font-size: 22px; color: var(--text-secondary); margin-bottom: 20px;">Mon, 24 Feb – Sun, 2 Mar</div>
+
+              <div class="reality-card">
+                <span class="icon" style="width: 26px; height: 26px; flex-shrink: 0;"><svg width="26" height="26" viewBox="0 0 48 48" fill="none"><path d="M24 9C18 9 13.5 13.5 13.5 19.5C13.5 22.5 15 25.5 16.5 27V33C16.5 34.5 18 36 19.5 36H28.5C30 36 31.5 34.5 31.5 33V27C33 25.5 34.5 22.5 34.5 19.5C34.5 13.5 30 9 24 9Z" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5 39H28.5" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/></svg></span>
+                <div class="reality-text">Medium-energy week. I've kept it realistic — big items first, then coast.</div>
+              </div>
+
+              <div class="section-header">
+                <span class="icon" style="width: 28px; height: 28px;"><svg width="28" height="28" viewBox="0 0 48 48" fill="none"><path d="M12 9V39" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M12 9L33 15L12 21" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="section-name">Do First</div>
+              </div>
+              <div class="task-card"><div class="task-info"><div class="task-text">Finish Q2 proposal for client review</div><div class="task-meta"><span class="icon"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M36 18H12C10.3 18 9 19.3 9 21V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V21C39 19.3 37.7 18 36 18Z" stroke="#808080" stroke-width="3"/><path d="M16.5 18V13.5C16.5 11.2 18 9 20.2 9H27.7C30 9 31.5 11.2 31.5 13.5V18" stroke="#808080" stroke-width="3"/><path d="M9 25.5H39" stroke="#808080" stroke-width="3" stroke-linecap="round"/></svg></span>Work · 2 hours</div></div></div>
+
+              <div class="section-header" style="margin-top: 24px;">
+                <span class="icon" style="width: 28px; height: 28px;"><svg width="28" height="28" viewBox="0 0 48 48" fill="none"><path d="M36 12H12C10.3 12 9 13.3 9 15V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V15C39 13.3 37.7 12 36 12Z" stroke="#2E8B6A" stroke-width="3"/><path d="M9 19.5H39" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M16.5 9V15M31.5 9V15" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M18 28.5L21 31.5L28.5 24" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="section-name">This Week</div>
+                <div class="section-count">5 tasks</div>
+              </div>
+
+              <div class="cat-header"><span class="icon" style="width: 20px; height: 20px;"><svg width="20" height="20" viewBox="0 0 48 48" fill="none"><path d="M36 18H12C10.3 18 9 19.3 9 21V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V21C39 19.3 37.7 18 36 18Z" stroke="#4A90B0" stroke-width="3"/><path d="M16.5 18V13.5C16.5 11.2 18 9 20.2 9H27.7C30 9 31.5 11.2 31.5 13.5V18" stroke="#4A90B0" stroke-width="3"/><path d="M9 25.5H39" stroke="#4A90B0" stroke-width="3" stroke-linecap="round"/></svg></span><div class="cat-label">Work</div><div class="cat-count">2</div></div>
+              <div class="task-card"><div class="task-info"><div class="task-text">Code review for Tom's PR</div><div class="task-meta">45 mins</div></div></div>
+              <div class="task-card"><div class="task-info"><div class="task-text">Reply to Sarah about dinner</div><div class="task-meta">5 mins</div></div></div>
+
+              <div class="cat-header"><span class="icon" style="width: 20px; height: 20px;"><svg width="20" height="20" viewBox="0 0 48 48" fill="none"><path d="M19.5 12V19.5H12V28.5H19.5V36H28.5V28.5H36V19.5H28.5V12H19.5Z" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div class="cat-label">Health</div><div class="cat-count">1</div></div>
+              <div class="task-card"><div class="task-info"><div class="task-text">30 min run — twice this week</div><div class="task-meta">1 hour total</div></div></div>
+
+              <div style="margin-top: 28px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="mock-btn primary">Accept & Get going</div>
+                <div class="mock-btn secondary">Tweak</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating task cards popping off to the left -->
+        <div class="floating-card" style="left: 50px; top: 620px; transform: rotate(-3deg);">
+          <div class="fc-checkbox undone"></div>
+          <div>
+            <div class="fc-text">Finish Q2 proposal</div>
+            <div class="fc-cat work"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M36 18H12C10.3 18 9 19.3 9 21V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V21C39 19.3 37.7 18 36 18Z" stroke="#3A7095" stroke-width="3"/><path d="M16.5 18V13.5C16.5 11.2 18 9 20.2 9H27.7C30 9 31.5 11.2 31.5 13.5V18" stroke="#3A7095" stroke-width="3"/></svg>Work</div>
+          </div>
+        </div>
+        <div class="floating-card" style="left: 30px; top: 820px; transform: rotate(2deg);">
+          <div class="fc-checkbox undone"></div>
+          <div>
+            <div class="fc-text">30 min run</div>
+            <div class="fc-cat health"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M19.5 12V19.5H12V28.5H19.5V36H28.5V28.5H36V19.5H28.5V12H19.5Z" stroke="#2E8B6A" stroke-width="3"/></svg>Health</div>
+          </div>
+        </div>
+
+        <div class="marketing bottom">
+          <h2>Your week,<br>simplified.</h2>
+          <p>AI prioritises what actually matters</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3: Progress — TEXT TOP, phone bottom-left tilted, floating done cards right ===== -->
+  <div class="screenshot-wrapper">
+    <div class="screenshot-label">3. Progress</div>
+    <div class="screenshot-frame">
+      <div class="shot bg-3" id="shot3">
+        <div class="orb orb-glow-2"></div>
+        <div class="orb orb-glow-3"></div>
+
+        <div class="marketing top" style="top: 140px;">
+          <svg class="marketing-logo-dark" width="90" height="90" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="#1a5c42" stroke-width="2" opacity="0.5"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.7"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.4"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+          <h2>Tick it off.<br>Feel the win.</h2>
+          <p>Track progress without the overwhelm</p>
+        </div>
+
+        <!-- Floating completed task cards on the right -->
+        <div class="floating-card" style="right: 50px; top: 1000px; transform: rotate(2.5deg);">
+          <div class="fc-checkbox done"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="fc-text done-text">Code review for Tom's PR</div>
+        </div>
+        <div class="floating-card" style="right: 80px; top: 1130px; transform: rotate(-1.5deg);">
+          <div class="fc-checkbox done"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="fc-text done-text">Book dentist appointment</div>
+        </div>
+
+        <!-- Floating progress badge -->
+        <div class="floating-badge" style="right: 100px; top: 920px; transform: rotate(3deg);">
+          4 of 7 done
+        </div>
+
+        <div class="phone bottom-left">
+          <div class="phone-screen">
+            <div class="status-bar"><span>9:41</span><span></span></div>
+            <div class="app-header">
+              <div class="app-header-title"><svg class="app-header-logo" width="32" height="32" viewBox="0 0 100 100" fill="none"><path d="M0 50C0 22.4 22.4 0 50 0C77.6 0 100 22.4 100 50C100 77.6 77.6 100 50 100C22.4 100 0 77.6 0 50Z" fill="white"/><path d="M50 100V98.8C23 98.8 1.2 77 1.2 50H-1.2C-1.2 78.3 21.7 101.2 50 101.2V100ZM100 50H98.8C98.8 77 77 98.8 50 98.8V101.2C78.3 101.2 101.2 78.3 101.2 50H100ZM50 0V1.2C77 1.2 98.8 23 98.8 50H101.2C101.2 21.7 78.3-1.2 50-1.2V0ZM50 0V-1.2C21.7-1.2-1.2 21.7-1.2 50H1.2C1.2 23 23 1.2 50 1.2V0Z" fill="#2E8B6A"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.75"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.5"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>Planscope</div>
+              <div class="header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#808080" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            </div>
+            <div class="app-progress-bar">
+              <div class="app-progress-text">4 of 7 done | 3 to go</div>
+              <div class="app-progress-track"><div class="app-progress-fill" style="width: 57%;"></div></div>
+            </div>
+            <div class="app-content">
+              <div class="section-title">Week of 24 Feb</div>
+
+              <div class="section-header" style="margin-top: 20px;">
+                <span class="icon" style="width: 26px; height: 26px;"><svg width="26" height="26" viewBox="0 0 48 48" fill="none"><path d="M12 9V39" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M12 9L33 15L12 21" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="section-name">Do First</div>
+              </div>
+              <div class="task-card"><div class="task-checkbox done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="task-info"><div class="task-text done-text">Finish Q2 proposal</div></div></div>
+
+              <div class="section-header" style="margin-top: 20px;">
+                <span class="icon" style="width: 26px; height: 26px;"><svg width="26" height="26" viewBox="0 0 48 48" fill="none"><path d="M36 12H12C10.3 12 9 13.3 9 15V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V15C39 13.3 37.7 12 36 12Z" stroke="#2E8B6A" stroke-width="3"/><path d="M9 19.5H39" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M16.5 9V15M31.5 9V15" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round"/><path d="M18 28.5L21 31.5L28.5 24" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="section-name">This Week</div>
+              </div>
+
+              <div class="task-card"><div class="task-checkbox done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="task-info"><div class="task-text done-text">Code review for Tom's PR</div></div></div>
+              <div class="task-card"><div class="task-checkbox done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="task-info"><div class="task-text done-text">Reply to Sarah about dinner</div></div></div>
+              <div class="task-card"><div class="task-checkbox done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="task-info"><div class="task-text done-text">Book dentist appointment</div></div></div>
+
+              <div class="task-card"><div class="task-checkbox"></div><div class="task-info"><div class="task-text">Pay electricity bill</div><div class="task-meta"><span class="icon"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="15" stroke="#808080" stroke-width="3"/><path d="M24 15V33M24 15C19.5 15 19.5 18 19.5 18M24 15C28.5 15 28.5 18 28.5 19.5C28.5 21 27 22.5 24 22.5C21 22.5 19.5 24 19.5 25.5C19.5 27 19.5 30 24 30C28.5 30 28.5 27 28.5 27" stroke="#808080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Money · 10 mins</div></div></div>
+              <div class="task-card"><div class="task-checkbox"></div><div class="task-info"><div class="task-text">30 min run — twice</div><div class="task-meta"><span class="icon"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M19.5 12V19.5H12V28.5H19.5V36H28.5V28.5H36V19.5H28.5V12H19.5Z" stroke="#808080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Health · 1 hour</div></div></div>
+              <div class="task-card"><div class="task-checkbox"></div><div class="task-info"><div class="task-text">Start meal prepping</div><div class="task-meta"><span class="icon"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M9 24L24 9L39 24V39H27V30H21V39H9V24Z" stroke="#808080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Home · 1.5 hours</div></div></div>
+
+              <div class="celebrate-card"><p>Steady progress. Over halfway there.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4: Dashboard — TEXT BOTTOM, phone top-center, floating plan cards ===== -->
+  <div class="screenshot-wrapper">
+    <div class="screenshot-label">4. Dashboard</div>
+    <div class="screenshot-frame">
+      <div class="shot bg-4" id="shot4">
+        <div class="orb orb-glow-1"></div>
+        <div class="orb orb-glow-2"></div>
+
+        <div class="phone top-center" style="top: 100px;">
+          <div class="phone-screen">
+            <div class="status-bar"><span>9:41</span><span></span></div>
+            <div class="app-header">
+              <div class="app-header-title"><svg class="app-header-logo" width="32" height="32" viewBox="0 0 100 100" fill="none"><path d="M0 50C0 22.4 22.4 0 50 0C77.6 0 100 22.4 100 50C100 77.6 77.6 100 50 100C22.4 100 0 77.6 0 50Z" fill="white"/><path d="M50 100V98.8C23 98.8 1.2 77 1.2 50H-1.2C-1.2 78.3 21.7 101.2 50 101.2V100ZM100 50H98.8C98.8 77 77 98.8 50 98.8V101.2C78.3 101.2 101.2 78.3 101.2 50H100ZM50 0V1.2C77 1.2 98.8 23 98.8 50H101.2C101.2 21.7 78.3-1.2 50-1.2V0ZM50 0V-1.2C21.7-1.2-1.2 21.7-1.2 50H1.2C1.2 23 23 1.2 50 1.2V0Z" fill="#2E8B6A"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.75"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.5"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>Planscope</div>
+              <div class="header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#808080" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            </div>
+            <div class="app-content">
+              <div class="section-title">Your plans this week</div>
+              <div class="section-subtitle">1 active plan. Pick what matters.</div>
+
+              <div class="plan-card">
+                <div class="plan-card-header"><div class="plan-card-title">Week of 24 Feb</div><div class="plan-card-count">4/7 done</div></div>
+                <div class="plan-progress-track"><div class="plan-progress-fill" style="width: 57%;"></div></div>
+              </div>
+
+              <div class="new-plan-btn" style="margin-top: 14px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E8B6A" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New plan for this week
+              </div>
+
+              <div style="margin-top: 36px;">
+                <div class="section-title" style="font-size: 30px;">Recent history</div>
+                <div style="margin-top: 14px;">
+                  <div class="plan-card" style="opacity: 0.7;"><div class="plan-card-header"><div class="plan-card-title" style="font-size: 24px;">Week of 17 Feb</div><div class="plan-card-count" style="color: var(--primary);">6/6 done</div></div><div class="plan-progress-track"><div class="plan-progress-fill" style="width: 100%;"></div></div></div>
+                  <div class="plan-card" style="opacity: 0.5;"><div class="plan-card-header"><div class="plan-card-title" style="font-size: 24px;">Week of 10 Feb</div><div class="plan-card-count">5/7 done</div></div><div class="plan-progress-track"><div class="plan-progress-fill" style="width: 71%;"></div></div></div>
+                  <div class="plan-card" style="opacity: 0.35;"><div class="plan-card-header"><div class="plan-card-title" style="font-size: 24px;">Week of 3 Feb</div><div class="plan-card-count">4/6 done</div></div><div class="plan-progress-track"><div class="plan-progress-fill" style="width: 67%;"></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating plan card popping out bottom-left -->
+        <div class="floating-plan" style="left: 40px; bottom: 420px; transform: rotate(-2deg);">
+          <div class="fp-header"><div class="fp-title">Week of 17 Feb</div><div class="fp-count" style="color: var(--primary);">6/6 done</div></div>
+          <div class="fp-track"><div class="fp-fill" style="width: 100%;"></div></div>
+        </div>
+
+        <!-- Floating badge -->
+        <div class="floating-badge" style="left: 80px; bottom: 560px; transform: rotate(-1deg);">
+          6/6 complete
+        </div>
+
+        <div class="marketing bottom" style="bottom: 120px;">
+          <h2>One place for<br>your week.</h2>
+          <p>See everything at a glance</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 5: Pro Plus — TEXT TOP, phone bottom-right tilted, floating named plans left ===== -->
+  <div class="screenshot-wrapper">
+    <div class="screenshot-label">5. Pro Plus</div>
+    <div class="screenshot-frame">
+      <div class="shot bg-5" id="shot5">
+        <div class="orb orb-glow-1"></div>
+        <div class="orb orb-glow-3"></div>
+
+        <div class="marketing top" style="top: 140px;">
+          <svg class="marketing-logo-dark" width="90" height="90" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="49" stroke="#1a5c42" stroke-width="2" opacity="0.5"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.7"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.4"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#1a5c42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+          <h2>Multiple plans.<br>One clear week.</h2>
+          <p>Separate plans for work, life, and side projects</p>
+        </div>
+
+        <!-- Floating named plan cards on the left -->
+        <div class="floating-plan" style="left: 40px; top: 980px; transform: rotate(-2.5deg);">
+          <div class="fp-label work"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M36 18H12C10.3 18 9 19.3 9 21V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V21C39 19.3 37.7 18 36 18Z" stroke="#3A7095" stroke-width="3"/><path d="M16.5 18V13.5C16.5 11.2 18 9 20.2 9H27.7C30 9 31.5 11.2 31.5 13.5V18" stroke="#3A7095" stroke-width="3"/></svg>Work</div>
+          <div class="fp-header"><div class="fp-title">Q2 Sprint</div><div class="fp-count">3/6 done</div></div>
+          <div class="fp-track"><div class="fp-fill" style="width: 50%;"></div></div>
+        </div>
+        <div class="floating-plan" style="left: 60px; top: 1180px; transform: rotate(1.5deg);">
+          <div class="fp-label personal"><svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M19.5 12V19.5H12V28.5H19.5V36H28.5V28.5H36V19.5H28.5V12H19.5Z" stroke="#2E8B6A" stroke-width="3"/></svg>Personal</div>
+          <div class="fp-header"><div class="fp-title">Life Admin</div><div class="fp-count">2/4 done</div></div>
+          <div class="fp-track"><div class="fp-fill" style="width: 50%;"></div></div>
+        </div>
+
+        <div class="phone bottom-right">
+          <div class="phone-screen">
+            <div class="status-bar"><span>9:41</span><span></span></div>
+            <div class="app-header">
+              <div class="app-header-title"><svg class="app-header-logo" width="32" height="32" viewBox="0 0 100 100" fill="none"><path d="M0 50C0 22.4 22.4 0 50 0C77.6 0 100 22.4 100 50C100 77.6 77.6 100 50 100C22.4 100 0 77.6 0 50Z" fill="white"/><path d="M50 100V98.8C23 98.8 1.2 77 1.2 50H-1.2C-1.2 78.3 21.7 101.2 50 101.2V100ZM100 50H98.8C98.8 77 77 98.8 50 98.8V101.2C78.3 101.2 101.2 78.3 101.2 50H100ZM50 0V1.2C77 1.2 98.8 23 98.8 50H101.2C101.2 21.7 78.3-1.2 50-1.2V0ZM50 0V-1.2C21.7-1.2-1.2 21.7-1.2 50H1.2C1.2 23 23 1.2 50 1.2V0Z" fill="#2E8B6A"/><path d="M38.3 54.9L50 69.5M50 69.5L61.7 54.9M50 69.5V30.5" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g opacity="0.75"><path d="M42.2 52L50 61.7M50 61.7L57.8 52M50 61.7V38.3" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g opacity="0.5"><path d="M45.1 50L50 54.9M50 54.9L54.9 50M50 54.9V45.1" stroke="#2E8B6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>Planscope</div>
+              <div class="header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#808080" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            </div>
+            <div class="app-content">
+              <div class="section-title">Your plans this week</div>
+              <div class="section-subtitle">3 active plans. Pick what matters.</div>
+
+              <div class="plan-card">
+                <div class="plan-label work"><span class="icon"><svg width="16" height="16" viewBox="0 0 48 48" fill="none"><path d="M36 18H12C10.3 18 9 19.3 9 21V36C9 37.7 10.3 39 12 39H36C37.7 39 39 37.7 39 36V21C39 19.3 37.7 18 36 18Z" stroke="#3A7095" stroke-width="3"/><path d="M16.5 18V13.5C16.5 11.2 18 9 20.2 9H27.7C30 9 31.5 11.2 31.5 13.5V18" stroke="#3A7095" stroke-width="3"/><path d="M9 25.5H39" stroke="#3A7095" stroke-width="3" stroke-linecap="round"/></svg></span>Work</div>
+                <div class="plan-card-header"><div class="plan-card-title">Q2 Sprint</div><div class="plan-card-count">3/6 done</div></div>
+                <div class="plan-progress-track"><div class="plan-progress-fill" style="width: 50%;"></div></div>
+              </div>
+
+              <div class="plan-card">
+                <div class="plan-label personal"><span class="icon"><svg width="16" height="16" viewBox="0 0 48 48" fill="none"><path d="M19.5 12V19.5H12V28.5H19.5V36H28.5V28.5H36V19.5H28.5V12H19.5Z" stroke="#2E8B6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Personal</div>
+                <div class="plan-card-header"><div class="plan-card-title">Life Admin</div><div class="plan-card-count">2/4 done</div></div>
+                <div class="plan-progress-track"><div class="plan-progress-fill" style="width: 50%;"></div></div>
+              </div>
+
+              <div class="plan-card">
+                <div class="plan-label side"><span class="icon"><svg width="16" height="16" viewBox="0 0 48 48" fill="none"><path d="M24 6L27.7 18.7L41.2 19.5L30.7 28.5L34.5 42L24 34.5L13.5 42L17.2 28.5L6.7 19.5L20.2 18.7L24 6Z" stroke="#B86520" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Side Project</div>
+                <div class="plan-card-header"><div class="plan-card-title">App Launch Prep</div><div class="plan-card-count">1/5 done</div></div>
+                <div class="plan-progress-track"><div class="plan-progress-fill" style="width: 20%;"></div></div>
+              </div>
+
+              <div class="new-plan-btn" style="margin-top: 14px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2E8B6A" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New plan for this week
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="export-info">
+  <strong>Export:</strong> Chrome DevTools (F12) → Elements → right-click any <code>.shot</code> div → "Capture node screenshot" for pixel-perfect 1290x2796.
+</div>
+
+</body>
+</html>

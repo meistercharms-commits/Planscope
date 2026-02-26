@@ -7,11 +7,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Prevent WebView from extending behind the status bar
+        // Set window background to match app background (#FAFAF9) to prevent white flash
         DispatchQueue.main.async {
             if let rootVC = self.window?.rootViewController {
                 rootVC.edgesForExtendedLayout = []
             }
+            self.window?.backgroundColor = UIColor(red: 250/255, green: 250/255, blue: 249/255, alpha: 1.0)
         }
         return true
     }

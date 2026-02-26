@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Mail,
   CreditCard,
@@ -11,6 +12,7 @@ import {
   ExternalLink,
   Check as CheckIcon,
   Brain,
+  Smartphone,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -235,6 +237,37 @@ export default function SettingsPage() {
 
         <div className="space-y-6">
           {/* Section 1: Account (logged-in only) */}
+          {/* Account upsell for anonymous users */}
+          {!user && (
+            <section className="bg-primary-light rounded-lg p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <Smartphone size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="text-sm font-semibold text-text">
+                    Create an account
+                  </h2>
+                  <p className="text-xs text-text-secondary mt-1 mb-3">
+                    Your plans are saved to this device only. Create a free account so they&apos;re backed up and accessible across all your devices.
+                  </p>
+                  <div className="flex gap-2">
+                    <Link
+                      href="/signup"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark transition-colors"
+                    >
+                      Create account
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-text-secondary bg-white border border-border rounded-md hover:bg-bg-subtle transition-colors"
+                    >
+                      Log in
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           {user ? (
             <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
               <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
@@ -564,7 +597,7 @@ export default function SettingsPage() {
 
             <div className="space-y-3">
               <a
-                href="mailto:support@planscope.co"
+                href="mailto:support@planscope.app"
                 className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
               >
                 <ExternalLink size={14} />

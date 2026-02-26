@@ -123,7 +123,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
                       >
                         <Settings size={16} />
-                        Settings
+                        Profile & Settings
                       </Link>
                       <div className="border-t border-border my-1" />
                       <button
@@ -170,7 +170,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
                       >
                         <Settings size={16} />
-                        Settings
+                        Profile & Settings
                       </Link>
                       <div className="border-t border-border my-1" />
                       <Link

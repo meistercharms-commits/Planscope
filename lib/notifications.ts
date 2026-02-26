@@ -31,6 +31,32 @@ async function isNative(): Promise<boolean> {
   }
 }
 
+/**
+ * Safe wrapper for Capacitor plugin calls.
+ * On iOS the native bridge can return non-thenable objects from plugin methods,
+ * causing "localnotifications.then() is not implemented" errors.
+ * This wrapper catches both sync throws and non-Promise returns.
+ */
+function safePluginCall<T>(fn: () => unknown, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    try {
+      const result = fn();
+      // If result is a proper thenable/Promise, resolve with it
+      if (result != null && typeof (result as { then?: unknown }).then === "function") {
+        (result as Promise<T>).then(
+          (val: T) => resolve(val),
+          () => resolve(fallback)
+        );
+      } else {
+        // Not a thenable — return the result if truthy, otherwise fallback
+        resolve((result as T) ?? fallback);
+      }
+    } catch {
+      resolve(fallback);
+    }
+  });
+}
+
 async function getLocalNotifications() {
   try {
     const { LocalNotifications } = await import("@capacitor/local-notifications");
@@ -46,7 +72,10 @@ export async function checkPermission(): Promise<"granted" | "denied" | "prompt"
   try {
     const LN = await getLocalNotifications();
     if (!LN) return "granted"; // plugin not available, skip gracefully
-    const result = await LN.checkPermissions();
+    const result = await safePluginCall(
+      () => LN.checkPermissions(),
+      { display: "granted" as const }
+    );
     if (result.display === "granted") return "granted";
     if (result.display === "denied") return "denied";
     return "prompt";
@@ -60,7 +89,10 @@ export async function requestNotificationPermission(): Promise<boolean> {
   try {
     const LN = await getLocalNotifications();
     if (!LN) return true; // plugin not available, succeed silently
-    const result = await LN.requestPermissions();
+    const result = await safePluginCall(
+      () => LN.requestPermissions(),
+      { display: "granted" as const }
+    );
     return result.display === "granted";
   } catch {
     return true; // don't block the user if plugin errors
@@ -91,18 +123,22 @@ async function scheduleNotification(options: {
   try {
     const LN = await getLocalNotifications();
     if (!LN) return;
-    await LN.schedule({
-      notifications: [
-        {
-          id: options.id,
-          title: options.title,
-          body: options.body,
-          schedule: { at: options.at },
-          sound: options.sound || undefined,
-          actionTypeId: options.actionTypeId,
-        },
-      ],
-    });
+    await safePluginCall(
+      () =>
+        LN.schedule({
+          notifications: [
+            {
+              id: options.id,
+              title: options.title,
+              body: options.body,
+              schedule: { at: options.at },
+              sound: options.sound || undefined,
+              actionTypeId: options.actionTypeId,
+            },
+          ],
+        }),
+      undefined
+    );
   } catch (e) {
     console.warn("[Notifications] Schedule failed:", e);
   }
@@ -113,7 +149,10 @@ async function cancelNotification(id: number) {
   try {
     const LN = await getLocalNotifications();
     if (!LN) return;
-    await LN.cancel({ notifications: [{ id }] });
+    await safePluginCall(
+      () => LN.cancel({ notifications: [{ id }] }),
+      undefined
+    );
   } catch {
     // ignore
   }
@@ -213,7 +252,10 @@ export async function scheduleDailyCheckin(time: string) {
     if (!LN) return;
 
     // Cancel existing daily check-in first
-    await LN.cancel({ notifications: [{ id: ID_DAILY_CHECKIN }] });
+    await safePluginCall(
+      () => LN.cancel({ notifications: [{ id: ID_DAILY_CHECKIN }] }),
+      undefined
+    );
 
     // Parse time string "HH:MM"
     const [hours, minutes] = time.split(":").map(Number);
@@ -226,19 +268,23 @@ export async function scheduleDailyCheckin(time: string) {
       scheduledDate.setDate(scheduledDate.getDate() + 1);
     }
 
-    await LN.schedule({
-      notifications: [
-        {
-          id: ID_DAILY_CHECKIN,
-          title: "Today's priorities",
-          body: "Quick look at what matters today.",
-          schedule: {
-            at: scheduledDate,
-            every: "day" as const,
-          },
-        },
-      ],
-    });
+    await safePluginCall(
+      () =>
+        LN.schedule({
+          notifications: [
+            {
+              id: ID_DAILY_CHECKIN,
+              title: "Today's priorities",
+              body: "Quick look at what matters today.",
+              schedule: {
+                at: scheduledDate,
+                every: "day" as const,
+              },
+            },
+          ],
+        }),
+      undefined
+    );
   } catch (e) {
     console.warn("[Notifications] Daily check-in schedule failed:", e);
   }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
-import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard } from "lucide-react";
+import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import PlanscopeLogo from "@/components/ui/PlanscopeLogo";
 
@@ -136,6 +136,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         <LogOut size={16} />
                         Log out
                       </button>
+                      <div className="border-t border-border my-1" />
+                      <a
+                        href="mailto:support@planscope.app?subject=Feedback"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-subtle transition-colors"
+                      >
+                        <MessageSquare size={16} />
+                        Share Feedback
+                      </a>
                     </>
                   ) : (
                     <>
@@ -180,6 +189,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         <LogOut size={16} />
                         Log in
                       </Link>
+                      <div className="border-t border-border my-1" />
+                      <a
+                        href="mailto:support@planscope.app?subject=Feedback"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-subtle transition-colors"
+                      >
+                        <MessageSquare size={16} />
+                        Share Feedback
+                      </a>
                     </>
                   )}
                 </div>

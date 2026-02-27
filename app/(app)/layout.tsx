@@ -27,6 +27,16 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const isOnline = useOnlineStatus();
   const { timer, timeLeft, isRunning, pauseTimer, resumeTimer } = useFocusTimer();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close menu on Escape key
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
   const previewSaveAttempted = useRef(false);
   const isOnFocusPage = pathname.includes("/focus/");
 

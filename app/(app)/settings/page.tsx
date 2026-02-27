@@ -60,6 +60,7 @@ export default function SettingsPage() {
 
   // Learning
   const [learnEnabled, setLearnEnabled] = useState(true);
+  const [learnFetched, setLearnFetched] = useState(false);
   const [learnLoading, setLearnLoading] = useState(false);
 
   // Notifications
@@ -99,8 +100,12 @@ export default function SettingsPage() {
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data) setLearnEnabled(data.learnEnabled);
+          setLearnFetched(true);
         })
-        .catch((err) => console.error("[Settings] Learn-enabled fetch failed:", err));
+        .catch((err) => {
+          setLearnFetched(true);
+          console.error("[Settings] Learn-enabled fetch failed:", err);
+        });
       // Load billing info (subscription status + portal URL)
       fetch("/api/billing/customer")
         .then((r) => (r.ok ? r.json() : null))
@@ -736,10 +741,10 @@ export default function SettingsPage() {
                       setLearnLoading(false);
                     }
                   }}
-                  disabled={learnLoading}
+                  disabled={learnLoading || !learnFetched}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    learnEnabled ? "bg-primary" : "bg-border"
-                  } ${learnLoading ? "opacity-50" : ""}`}
+                    learnEnabled && learnFetched ? "bg-primary" : "bg-border"
+                  } ${learnLoading || !learnFetched ? "opacity-50" : ""}`}
                 >
                   <span
                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -751,106 +756,108 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {/* Section: Notifications */}
-          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
-              <Bell size={20} className="text-primary" />
-              Notifications
-            </h2>
+          {/* Section: Notifications (logged-in only) */}
+          {user?.email ? (
+            <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
+                <Bell size={20} className="text-primary" />
+                Notifications
+              </h2>
 
-            <div className="space-y-4">
-              {/* Plan Ready */}
-              <NotifToggleRow
-                label="Plan ready"
-                description="Get notified when your weekly plan is ready to review."
-                enabled={notifPrefs.planReady}
-                loading={notifLoading === "planReady"}
-                onToggle={(val) => handleNotifToggle("planReady", val)}
-              />
+              <div className="space-y-4">
+                {/* Plan Ready */}
+                <NotifToggleRow
+                  label="Plan ready"
+                  description="Get notified when your weekly plan is ready to review."
+                  enabled={notifPrefs.planReady}
+                  loading={notifLoading === "planReady"}
+                  onToggle={(val) => handleNotifToggle("planReady", val)}
+                />
 
-              {/* Daily Check-in */}
-              <NotifToggleRow
-                label="Daily check-in"
-                description="A gentle reminder of today's priorities."
-                enabled={notifPrefs.dailyCheckin}
-                loading={notifLoading === "dailyCheckin"}
-                onToggle={(val) => handleNotifToggle("dailyCheckin", val)}
-              >
-                {notifPrefs.dailyCheckin && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={notifPrefs.dailyCheckinTime}
-                      onChange={(e) => handleCheckinTimeChange(e.target.value)}
-                      className="text-sm border border-border rounded-md px-2 py-1 bg-white text-text"
-                    />
-                    <span className="text-xs text-text-secondary">daily</span>
-                  </div>
-                )}
-              </NotifToggleRow>
+                {/* Daily Check-in */}
+                <NotifToggleRow
+                  label="Daily check-in"
+                  description="A gentle reminder of today's priorities."
+                  enabled={notifPrefs.dailyCheckin}
+                  loading={notifLoading === "dailyCheckin"}
+                  onToggle={(val) => handleNotifToggle("dailyCheckin", val)}
+                >
+                  {notifPrefs.dailyCheckin && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={notifPrefs.dailyCheckinTime}
+                        onChange={(e) => handleCheckinTimeChange(e.target.value)}
+                        className="text-sm border border-border rounded-md px-2 py-1 bg-white text-text"
+                      />
+                      <span className="text-xs text-text-secondary">daily</span>
+                    </div>
+                  )}
+                </NotifToggleRow>
 
-              {/* Celebrations */}
-              <NotifToggleRow
-                label="Task celebrations"
-                description="Celebrate your progress at milestones."
-                enabled={notifPrefs.celebrations}
-                loading={notifLoading === "celebrations"}
-                onToggle={(val) => handleNotifToggle("celebrations", val)}
-              >
-                {notifPrefs.celebrations && (
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => handleCelebrationModeChange("milestones")}
-                      className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
-                        notifPrefs.celebrationMode === "milestones"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white text-text-secondary border-border hover:border-primary/40"
-                      }`}
-                    >
-                      Milestones only
-                    </button>
-                    <button
-                      onClick={() => handleCelebrationModeChange("every")}
-                      className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
-                        notifPrefs.celebrationMode === "every"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white text-text-secondary border-border hover:border-primary/40"
-                      }`}
-                    >
-                      Every task
-                    </button>
-                  </div>
-                )}
-              </NotifToggleRow>
+                {/* Celebrations */}
+                <NotifToggleRow
+                  label="Task celebrations"
+                  description="Celebrate your progress at milestones."
+                  enabled={notifPrefs.celebrations}
+                  loading={notifLoading === "celebrations"}
+                  onToggle={(val) => handleNotifToggle("celebrations", val)}
+                >
+                  {notifPrefs.celebrations && (
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => handleCelebrationModeChange("milestones")}
+                        className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
+                          notifPrefs.celebrationMode === "milestones"
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-text-secondary border-border hover:border-primary/40"
+                        }`}
+                      >
+                        Milestones only
+                      </button>
+                      <button
+                        onClick={() => handleCelebrationModeChange("every")}
+                        className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
+                          notifPrefs.celebrationMode === "every"
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-text-secondary border-border hover:border-primary/40"
+                        }`}
+                      >
+                        Every task
+                      </button>
+                    </div>
+                  )}
+                </NotifToggleRow>
 
-              {/* Focus Timer */}
-              <NotifToggleRow
-                label="Focus timer"
-                description="Get notified when your focus session timer ends."
-                enabled={notifPrefs.focusTimer}
-                loading={notifLoading === "focusTimer"}
-                onToggle={(val) => handleNotifToggle("focusTimer", val)}
-              />
+                {/* Focus Timer */}
+                <NotifToggleRow
+                  label="Focus timer"
+                  description="Get notified when your focus session timer ends."
+                  enabled={notifPrefs.focusTimer}
+                  loading={notifLoading === "focusTimer"}
+                  onToggle={(val) => handleNotifToggle("focusTimer", val)}
+                />
 
-              {/* Gentle Nudges */}
-              <NotifToggleRow
-                label="Gentle nudges"
-                description="A soft reminder if you haven't opened your plan in a few days."
-                enabled={notifPrefs.nudges}
-                loading={notifLoading === "nudges"}
-                onToggle={(val) => handleNotifToggle("nudges", val)}
-              />
+                {/* Gentle Nudges */}
+                <NotifToggleRow
+                  label="Gentle nudges"
+                  description="A soft reminder if you haven't opened your plan in a few days."
+                  enabled={notifPrefs.nudges}
+                  loading={notifLoading === "nudges"}
+                  onToggle={(val) => handleNotifToggle("nudges", val)}
+                />
 
-              {/* Promotional */}
-              <NotifToggleRow
-                label="Updates & offers"
-                description="Occasional updates about new features and plan limits."
-                enabled={notifPrefs.promotional}
-                loading={notifLoading === "promotional"}
-                onToggle={(val) => handleNotifToggle("promotional", val)}
-              />
-            </div>
-          </section>
+                {/* Promotional */}
+                <NotifToggleRow
+                  label="Updates & offers"
+                  description="Occasional updates about new features and plan limits."
+                  enabled={notifPrefs.promotional}
+                  loading={notifLoading === "promotional"}
+                  onToggle={(val) => handleNotifToggle("promotional", val)}
+                />
+              </div>
+            </section>
+          ) : null}
 
           {/* Section 4: Data (logged-in only) */}
           {user ? (

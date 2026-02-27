@@ -48,7 +48,6 @@ export default function PlanReviewPage({
   const [doFirstOpen, setDoFirstOpen] = useState(true);
   const [thisWeekOpen, setThisWeekOpen] = useState(true);
   const [tweakOpen, setTweakOpen] = useState(false);
-  const [tweaking, setTweaking] = useState(false);
   const [learnings, setLearnings] = useState<LearningsSummary | null>(null);
   const [showClarityCard, setShowClarityCard] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -147,19 +146,12 @@ export default function PlanReviewPage({
     router.push(`/plan/${id}/progress`);
   }
 
-  async function handleTweak(type: string) {
-    setTweaking(true);
+  function handleTweak() {
     setTweakOpen(false);
-    // For v1, re-generate by redirecting back to new-plan
-    // A full tweak would re-score without re-parsing
-    showToast("Rebalancing your plan...");
-    setTimeout(() => {
-      setTweaking(false);
-      fetchPlan();
-    }, 1500);
+    showToast("Plan tweaking is coming soon.");
   }
 
-  if (loading || tweaking) return <Spinner />;
+  if (loading) return <Spinner />;
   if (!plan) return null;
 
   // Parse plan metadata
@@ -411,13 +403,13 @@ export default function PlanReviewPage({
           How should we adjust?
         </p>
         <div className="space-y-3">
-          <Button fullWidth onClick={() => handleTweak("less")}>
+          <Button fullWidth onClick={handleTweak}>
             Too much (reduce to 5)
           </Button>
-          <Button fullWidth onClick={() => handleTweak("more")}>
+          <Button fullWidth onClick={handleTweak}>
             Too little (expand to 7+)
           </Button>
-          <Button fullWidth onClick={() => handleTweak("focus")}>
+          <Button fullWidth onClick={handleTweak}>
             Wrong focus (change emphasis)
           </Button>
         </div>

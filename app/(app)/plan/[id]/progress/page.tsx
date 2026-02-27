@@ -158,12 +158,16 @@ export default function PlanProgressPage({
       }
     } catch {
       // Revert on error
-      setPlan({
-        ...plan,
-        tasks: plan.tasks.map((t) =>
-          t.id === taskId ? { ...t, status: currentStatus } : t
-        ),
-      });
+      setPlan((prev) =>
+        prev
+          ? {
+              ...prev,
+              tasks: prev.tasks.map((t) =>
+                t.id === taskId ? { ...t, status: currentStatus } : t
+              ),
+            }
+          : prev
+      );
       showToast("Couldn't save that change. Try again.", "error");
     }
   }
@@ -192,12 +196,16 @@ export default function PlanProgressPage({
 
       if (res.status === 403) {
         // Revert
-        setPlan({
-          ...plan,
-          tasks: plan.tasks.map((t) =>
-            t.id === taskId ? { ...t, section: "not_this_week" } : t
-          ),
-        });
+        setPlan((prev) =>
+          prev
+            ? {
+                ...prev,
+                tasks: prev.tasks.map((t) =>
+                  t.id === taskId ? { ...t, section: "not_this_week" } : t
+                ),
+              }
+            : prev
+        );
         showToast("Your plan is full. Pick what matters.");
         return;
       }
@@ -207,12 +215,16 @@ export default function PlanProgressPage({
       }
     } catch {
       // Revert
-      setPlan({
-        ...plan,
-        tasks: plan.tasks.map((t) =>
-          t.id === taskId ? { ...t, section: "not_this_week" } : t
-        ),
-      });
+      setPlan((prev) =>
+        prev
+          ? {
+              ...prev,
+              tasks: prev.tasks.map((t) =>
+                t.id === taskId ? { ...t, section: "not_this_week" } : t
+              ),
+            }
+          : prev
+      );
       showToast("Couldn't move task. Try again.", "error");
     }
   }

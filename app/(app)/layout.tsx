@@ -2,13 +2,48 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
+import { useRouter } from "next/navigation";
 import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard, MessageSquare } from "lucide-react";
-import { useState, useEffect } from "react";
-import PlanscopeLogo from "@/components/ui/PlanscopeLogo";
+import { useState, useEffect, useRef } from "react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const previewSaveAttempted = useRef(false);
+
+  // Fallback: save unsaved preview plan after auth loads
+  // This catches cases where completeAuth() failed to save the preview
+  useEffect(() => {
+    if (loading || !user || previewSaveAttempted.current) return;
+    previewSaveAttempted.current = true;
+
+    const stored = sessionStorage.getItem("planscope_preview");
+    if (!stored) return;
+
+    async function saveUnsavedPreview() {
+      try {
+        const preview = JSON.parse(stored!);
+        const res = await fetch("/api/plans/save-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preview }),
+        });
+        if (res.ok) {
+          const { id } = await res.json();
+          sessionStorage.removeItem("planscope_preview");
+          router.push(`/plan/${id}`);
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.error("[Layout] Fallback preview save failed:", res.status, errData);
+        }
+      } catch (err) {
+        console.error("[Layout] Fallback preview save error:", err);
+      }
+    }
+
+    saveUnsavedPreview();
+  }, [user, loading, router]);
 
   // Configure native status bar so WebView sits below it (not behind)
   useEffect(() => {

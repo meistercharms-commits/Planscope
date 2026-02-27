@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   onAuthStateChanged,
@@ -22,6 +22,9 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Prevents onAuthStateChanged from racing with completeAuth()
+  const isAuthenticatingRef = useRef(false);
 
   // Sync session cookie whenever Firebase auth state changes
   const syncSession = useCallback(async () => {
@@ -58,6 +61,9 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(
       firebaseAuth,
       async (firebaseUser) => {
+        // Skip if completeAuth() is running — it handles session sync itself
+        if (isAuthenticatingRef.current) return;
+
         if (firebaseUser) {
           // Sync session cookie
           try {
@@ -132,19 +138,71 @@ export function useAuth() {
         sessionStorage.removeItem("planscope_preview");
         return id;
       }
-    } catch {
-      // Non-fatal — user can still use the app normally
+
+      // Log the error so we can diagnose failures
+      const errData = await res.json().catch(() => ({}));
+      console.error("[Auth] Save preview failed:", res.status, errData);
+    } catch (err) {
+      console.error("[Auth] Save preview error:", err);
     }
     return null;
   }
 
-  async function completeAuth() {
-    await syncSession();
-    const profile = await fetchProfile();
-    setUser(profile);
+  /**
+   * Sync the session cookie and VERIFY it works before proceeding.
+   * Returns true if the session is valid, false otherwise.
+   */
+  async function syncAndVerifySession(): Promise<boolean> {
+    const currentUser = firebaseAuth.currentUser;
+    if (!currentUser) return false;
 
-    const savedPlanId = await savePreviewPlan();
-    router.push(savedPlanId ? `/plan/${savedPlanId}` : "/dashboard");
+    const idToken = await currentUser.getIdToken(true);
+    const res = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!res.ok) {
+      console.error("[Auth] Session creation failed:", res.status);
+      return false;
+    }
+
+    // Verify the cookie was set by making a test request
+    const meRes = await fetch("/api/auth/me");
+    return meRes.ok;
+  }
+
+  async function completeAuth() {
+    // Block onAuthStateChanged from racing with us
+    isAuthenticatingRef.current = true;
+
+    try {
+      // Sync session and verify it works
+      let sessionOk = await syncAndVerifySession();
+
+      // Retry once if first attempt failed
+      if (!sessionOk) {
+        console.warn("[Auth] First session sync failed, retrying...");
+        await new Promise((r) => setTimeout(r, 500));
+        sessionOk = await syncAndVerifySession();
+      }
+
+      if (!sessionOk) {
+        console.error("[Auth] Session sync failed after retry");
+        // Fall through — the layout fallback will catch the preview
+      }
+
+      const profile = await fetchProfile();
+      setUser(profile);
+      setLoading(false);
+
+      // Try to save preview plan
+      const savedPlanId = await savePreviewPlan();
+      router.push(savedPlanId ? `/plan/${savedPlanId}` : "/dashboard");
+    } finally {
+      isAuthenticatingRef.current = false;
+    }
   }
 
   async function signup(email: string, password: string) {

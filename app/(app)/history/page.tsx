@@ -251,12 +251,12 @@ export default function HistoryPage() {
       {/* Plan list */}
       {plans.length === 0 ? (
         <div className="text-center py-16 bg-bg-card rounded-lg p-8">
-          <img src="/icons/no_plans.svg" alt="" className="w-16 h-16 mx-auto mb-6 opacity-60" />
+          <img src="/icons/no_plans.svg" alt="" className="w-20 h-20 mx-auto mb-6 opacity-80" />
           <h2 className="text-lg font-semibold text-text mb-2 font-display">
-            No plans yet
+            Your history starts here
           </h2>
-          <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto">
-            Start by creating your first plan. Write down everything on your mind, and we'll help you turn it into a realistic plan you can actually complete.
+          <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto leading-relaxed">
+            Once you&apos;ve made your first plan and the week passes, it&apos;ll show up here so you can look back at what you&apos;ve done.
           </p>
           <Link href="/new-plan">
             <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors">

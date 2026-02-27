@@ -385,6 +385,7 @@ export default function PlanProgressPage({
                   expanded={expandedTaskId === task.id}
                   onToggleExpand={() => setExpandedTaskId((prev) => prev === task.id ? null : task.id)}
                   isArchived={isArchived}
+                  dimmed={expandedTaskId !== null && expandedTaskId !== task.id}
                 />
               ))}
             </div>
@@ -429,6 +430,7 @@ export default function PlanProgressPage({
                       expanded={expandedTaskId === task.id}
                       onToggleExpand={() => setExpandedTaskId((prev) => prev === task.id ? null : task.id)}
                       isArchived={isArchived}
+                      dimmed={expandedTaskId !== null && expandedTaskId !== task.id}
                     />
                   ))}
                 </div>
@@ -615,6 +617,7 @@ function TaskProgressCard({
   expanded,
   onToggleExpand,
   isArchived,
+  dimmed,
 }: {
   task: PlanTask;
   onToggle: () => void;
@@ -625,8 +628,10 @@ function TaskProgressCard({
   expanded: boolean;
   onToggleExpand: () => void;
   isArchived?: boolean;
+  dimmed?: boolean;
 }) {
   const isDone = task.status === "done";
+  const isDimmed = !isArchived && dimmed && !expanded;
   const colors = getCategoryColors(task.category);
   const [hovered, setHovered] = useState(false);
   const [popKey, setPopKey] = useState(0);
@@ -635,14 +640,16 @@ function TaskProgressCard({
 
   return (
     <div
-      className={`rounded-lg transition-all duration-200 border-l-[3px] ${
-        isArchived ? "" : "cursor-pointer"
+      className={`rounded-lg transition-all duration-300 border-l-[3px] ${
+        isArchived ? "" : isDimmed ? "pointer-events-none" : "cursor-pointer"
       } ${
         isDone
           ? "bg-bg-subtle opacity-60"
-          : isNext && !isArchived
-            ? "bg-bg-card shadow-md animate-next-pulse"
-            : "bg-bg-card shadow-card"
+          : isDimmed
+            ? "opacity-40"
+            : isNext && !isArchived
+              ? "bg-bg-card shadow-md animate-next-pulse"
+              : "bg-bg-card shadow-card"
       }`}
       style={{
         borderLeftColor: isDone ? colors.border + "80" : colors.border,
@@ -667,7 +674,7 @@ function TaskProgressCard({
             if (!isDone) setPopKey((k) => k + 1);
             onToggle();
           }}
-          className={`flex-shrink-0 p-1 -m-1 ${isArchived ? "" : "cursor-pointer"}`}
+          className={`flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 -my-2 ${isArchived ? "" : "cursor-pointer"}`}
           aria-label={isDone ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
           disabled={isArchived}
         >
@@ -766,7 +773,7 @@ function TaskProgressCard({
               <Link
                 href={`/plan/${planId}/focus/${task.id}`}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.97] animate-expand-fade-in"
+                className="inline-flex items-center gap-2 mt-3 px-5 py-3 rounded-lg text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.97] animate-expand-fade-in"
                 style={{ backgroundColor: colors.border }}
               >
                 <Target size={16} />

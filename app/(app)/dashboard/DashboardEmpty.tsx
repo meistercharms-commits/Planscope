@@ -14,14 +14,14 @@ export default function DashboardEmpty() {
         <img
           src="/icons/no_plans.svg"
           alt=""
-          className="w-16 h-16 mx-auto mb-6 opacity-60"
+          className="w-20 h-20 mx-auto mb-6 opacity-80"
         />
         <h2 className="text-lg font-semibold text-text mb-2 font-display">
-          No plans yet this week
+          Fresh start this week
         </h2>
-        <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto">
-          Pour out everything on your mind and we&apos;ll turn it into a realistic
-          plan you can actually complete.
+        <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto leading-relaxed">
+          Write down what&apos;s on your mind — big or small. We&apos;ll sort it
+          into a plan that actually feels doable.
         </p>
         <Link
           href="/new-plan"

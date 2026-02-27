@@ -16,14 +16,6 @@ const generationLocks = new Set<string>();
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "unknown";
-    if (!rateLimit(`plan:${ip}`, { maxRequests: 10, windowMs: 60 * 60 * 1000 })) {
-      return NextResponse.json(
-        { error: "Too many plan requests. Please try again later." },
-        { status: 429 }
-      );
-    }
-
     // Allow both authenticated and anonymous users to generate plans
     // Only authenticated users can save them
     let auth: { userId: string; isAnon: boolean };
@@ -34,6 +26,17 @@ export async function POST(req: NextRequest) {
       // User will need to sign in to save the plan
       const randomId = randomBytes(8).toString("hex");
       auth = { userId: `anon-${randomId}`, isAnon: true };
+    }
+
+    // Rate limit — stricter for anonymous users to protect API costs
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const rateLimitKey = auth.isAnon ? `plan-anon:${ip}` : `plan:${auth.userId}`;
+    const maxRequests = auth.isAnon ? 3 : 10;
+    if (!rateLimit(rateLimitKey, { maxRequests, windowMs: 60 * 60 * 1000 })) {
+      return NextResponse.json(
+        { error: "Too many plan requests. Please try again later." },
+        { status: 429 }
+      );
     }
 
     // Prevent concurrent plan generation for the same user (closes TOCTOU race)

@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const auth = await getCurrentUser();
 
-    // Not logged in — return free tier defaults
+    // Not logged in — return free tier defaults without usage counter
     if (!auth) {
       const tier = "free" as const;
       const limits = TIER_LIMITS[tier];
@@ -18,8 +18,8 @@ export async function GET() {
         limits,
         usage: {
           plansThisMonth: 0,
-          plansLimit: limits.plansPerMonth,
-          plansRemaining: limits.plansPerMonth,
+          plansLimit: null,
+          plansRemaining: null,
         },
       });
     }

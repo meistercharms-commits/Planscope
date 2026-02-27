@@ -177,6 +177,16 @@
   overflow: hidden;
 }
 
+/* Voice recording pulse */
+@keyframes pulse-recording {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+
+.animate-pulse-recording {
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
 /* Staggered animation delays */
 .stagger-1 { animation-delay: 0ms; }
 .stagger-2 { animation-delay: 100ms; }

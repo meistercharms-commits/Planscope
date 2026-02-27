@@ -7,8 +7,10 @@ import Button from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Spinner from "@/components/ui/Spinner";
+import { Mic, MicOff } from "lucide-react";
 import { Tier } from "@/types";
 import { schedulePlanReady, triggerUpgradeNotice } from "@/lib/notifications";
+import { useSpeechToText } from "@/lib/useSpeechToText";
 
 interface TierData {
   tier: Tier;
@@ -47,6 +49,26 @@ export default function NewPlanPage() {
 
   // Active plan check
   const [activePlan, setActivePlan] = useState<{ id: string; status: string } | null>(null);
+
+  // Voice input (Pro Plus)
+  const {
+    isSupported: speechSupported,
+    isListening,
+    interimTranscript,
+    error: speechError,
+    startListening,
+    stopListening,
+  } = useSpeechToText((transcript) => {
+    setDump((prev) => {
+      const sep = prev.length > 0 && !prev.endsWith(" ") ? " " : "";
+      const combined = prev + sep + transcript;
+      if (combined.length > 10000) {
+        stopListening();
+        return combined.slice(0, 10000);
+      }
+      return combined;
+    });
+  });
 
   useEffect(() => {
     fetch("/api/settings/tier")
@@ -99,7 +121,7 @@ export default function NewPlanPage() {
           energy_level: energyLevel,
           focus_area: focusArea,
           ...(useCopy && lastPlan ? { copyFromPlanId: lastPlan.id } : {}),
-          ...(planLabel ? { label: planLabel } : {}),
+          ...(isProPlus && planLabel ? { label: planLabel } : {}),
         }),
         signal: controller.signal,
       });
@@ -239,8 +261,8 @@ export default function NewPlanPage() {
             onChange={setMode}
           />
 
-          {/* Plan label for Pro Plus */}
-          {isProPlus && (
+          {/* Plan label for Pro Plus — render while tier loads to avoid layout shift */}
+          {(tierData === null || isProPlus) && (
             <Input
               label="Plan name (optional)"
               placeholder="e.g. Work week, Creative projects"
@@ -274,18 +296,46 @@ export default function NewPlanPage() {
           {!useCopy && (
             <div>
               <p className="text-sm font-medium text-text-secondary mb-2">
-                Just type, no formatting needed
+                Just type{isProPlus && speechSupported ? " or speak" : ""}, no formatting needed
               </p>
-              <Textarea
-                placeholder="Finish Q2 proposal. Call client about scope change. Code review for team backend. Update project docs. Prep for 1:1s. Should really exercise this week..."
-                value={dump}
-                onChange={(e) => setDump(e.target.value)}
-                className="min-h-[200px] sm:min-h-[240px]"
-                required={!useCopy}
-              />
+              <div className="relative">
+                <Textarea
+                  placeholder="Finish Q2 proposal. Call client about scope change. Code review for team backend. Update project docs. Prep for 1:1s. Should really exercise this week..."
+                  value={dump + (interimTranscript ? (dump ? " " : "") + interimTranscript : "")}
+                  onChange={(e) => setDump(e.target.value)}
+                  className="min-h-[200px] sm:min-h-[240px]"
+                  maxLength={10000}
+                  required={!useCopy}
+                  readOnly={isListening}
+                />
+                {isProPlus && speechSupported && (
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    disabled={loading}
+                    aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                    className={`absolute bottom-3 right-3 p-2.5 rounded-full transition-all duration-200 ${
+                      isListening
+                        ? "bg-red-50 text-red-500 animate-pulse-recording"
+                        : "bg-[#F5F5F5] text-text-secondary hover:bg-[#E8F5EF] hover:text-primary"
+                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                  >
+                    {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                  </button>
+                )}
+              </div>
+              {speechError && (
+                <p className="text-xs text-red-500 mt-1">{speechError}</p>
+              )}
+              {isListening && (
+                <p className="text-xs text-primary mt-1 flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-recording" />
+                  Listening...
+                </p>
+              )}
               <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-text-tertiary">
-                  {dump.length < 20 && dump.length > 0
+                  {dump.length < 20 && dump.length > 0 && !isListening
                     ? `${20 - dump.length} more characters needed`
                     : "\u00A0"}
                 </p>

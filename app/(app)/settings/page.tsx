@@ -9,7 +9,8 @@ import {
   Download,
   Trash2,
   HelpCircle,
-  ExternalLink,
+  ChevronRight,
+  ChevronDown,
   Check as CheckIcon,
   Brain,
   Smartphone,
@@ -18,6 +19,7 @@ import {
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
 import { Tier, NotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from "@/types";
@@ -73,6 +75,7 @@ export default function SettingsPage() {
     usage: { plansThisMonth: number; plansLimit: number; plansRemaining: number | null };
   } | null>(null);
   const [tierLoading, setTierLoading] = useState(false);
+  const [showAllPlans, setShowAllPlans] = useState(false);
 
   // Billing
   const [billingInfo, setBillingInfo] = useState<{
@@ -271,8 +274,12 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-lg text-text-secondary">Loading...</div>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <div className="space-y-6">
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={2} />
+        </div>
       </div>
     );
   }
@@ -632,89 +639,56 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* Current plan — always visible */}
             <div className="space-y-3">
-              <TierCard
-                name="Free"
-                price="£0"
-                tier="free"
-                current={tierInfo?.tier === "free"}
-                features={[
-                  "Start planning without commitment",
-                  "4 plans per month",
-                  "Full access to AI planning",
-                  "Permission to say no to overwhelm",
-                ]}
-                onSelect={handleManageBilling}
-                loading={tierLoading}
-                isDowngrade={tierInfo?.tier !== "free"}
-                hasSubscription={!!billingInfo?.stripeSubscriptionId}
-              />
-              <TierCard
-                name="Pro"
-                price="£7.99/month"
-                tier="pro"
-                current={tierInfo?.tier === "pro"}
-                features={[
-                  "8 plans per month for people serious about execution",
-                  "Build planning momentum with recurring weekly templates",
-                  "Protect your deep work with built-in Focus Mode",
-                  "Capture your thoughts in seconds with voice-to-plan",
-                ]}
-                onSelect={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || "price_1T593x4kVPZipsrTEGYfEPYp")}
-                loading={tierLoading}
-                accent
-                isDowngrade={tierInfo?.tier === "pro_plus"}
-                hasSubscription={!!billingInfo?.stripeSubscriptionId}
-                onManageBilling={handleManageBilling}
-              />
-              <TierCard
-                name="Pro Plus"
-                price={billingCycle === "monthly" ? "£14.99/month" : "£149/year"}
-                tier="pro_plus"
-                current={tierInfo?.tier === "pro_plus"}
-                features={[
-                  "Plan everything, unlimited possibilities",
-                  "Sync across work, personal, side projects",
-                  "Spot patterns and bottlenecks fast with full plan history and completion data",
-                  "For people juggling it all",
-                ]}
-                comingSoon={[
-                  "Team plans \u2014 Turn solo planning into a shared workflow with up to 3 people",
-                ]}
-                onSelect={() =>
-                  handleUpgrade(
-                    billingCycle === "monthly"
-                      ? (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_MONTHLY || "price_1T595K4kVPZipsrTHBNxYUoT")
-                      : (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_ANNUAL || "price_1T596r4kVPZipsrTF2oGtiiA")
-                  )
-                }
-                loading={tierLoading}
-                billingToggle={
-                  <div className="flex gap-1 mt-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setBillingCycle("monthly"); }}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
-                        billingCycle === "monthly"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white text-text-secondary border-border hover:border-primary/40"
-                      }`}
-                    >
-                      Monthly
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setBillingCycle("annual"); }}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
-                        billingCycle === "annual"
-                          ? "bg-primary text-white border-primary"
-                          : "bg-white text-text-secondary border-border hover:border-primary/40"
-                      }`}
-                    >
-                      Annual (save 17%)
-                    </button>
-                  </div>
-                }
-              />
+              {tierInfo?.tier === "free" && (
+                <TierCard name="Free" price="£0" tier="free" current features={["Start planning without commitment", "4 plans per month", "Full access to AI planning", "Permission to say no to overwhelm"]} onSelect={handleManageBilling} loading={tierLoading} hasSubscription={!!billingInfo?.stripeSubscriptionId} />
+              )}
+              {tierInfo?.tier === "pro" && (
+                <TierCard name="Pro" price="£7.99/month" tier="pro" current features={["8 plans per month for people serious about execution", "Build planning momentum with recurring weekly templates", "Protect your deep work with built-in Focus Mode", "Capture your thoughts in seconds with voice-to-plan"]} onSelect={() => {}} loading={tierLoading} hasSubscription={!!billingInfo?.stripeSubscriptionId} />
+              )}
+              {tierInfo?.tier === "pro_plus" && (
+                <TierCard name="Pro Plus" price={billingCycle === "monthly" ? "£14.99/month" : "£149/year"} tier="pro_plus" current features={["Plan everything, unlimited possibilities", "Sync across work, personal, side projects", "Spot patterns and bottlenecks fast with full plan history and completion data", "For people juggling it all"]} onSelect={() => {}} loading={tierLoading} hasSubscription={!!billingInfo?.stripeSubscriptionId} />
+              )}
             </div>
+
+            {/* Compare plans — collapsible */}
+            <button
+              onClick={() => setShowAllPlans(!showAllPlans)}
+              className="flex items-center gap-1.5 text-sm font-medium text-primary mt-4 cursor-pointer hover:underline"
+            >
+              {showAllPlans ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              {showAllPlans ? "Hide plans" : "Compare plans"}
+            </button>
+            {showAllPlans && (
+              <div className="space-y-3 mt-3 animate-slide-open">
+                {tierInfo?.tier !== "free" && (
+                  <TierCard name="Free" price="£0" tier="free" current={false} features={["Start planning without commitment", "4 plans per month", "Full access to AI planning", "Permission to say no to overwhelm"]} onSelect={handleManageBilling} loading={tierLoading} isDowngrade={true} hasSubscription={!!billingInfo?.stripeSubscriptionId} />
+                )}
+                {tierInfo?.tier !== "pro" && (
+                  <TierCard name="Pro" price="£7.99/month" tier="pro" current={false} features={["8 plans per month for people serious about execution", "Build planning momentum with recurring weekly templates", "Protect your deep work with built-in Focus Mode", "Capture your thoughts in seconds with voice-to-plan"]} onSelect={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || "price_1T593x4kVPZipsrTEGYfEPYp")} loading={tierLoading} accent isDowngrade={tierInfo?.tier === "pro_plus"} hasSubscription={!!billingInfo?.stripeSubscriptionId} onManageBilling={handleManageBilling} />
+                )}
+                {tierInfo?.tier !== "pro_plus" && (
+                  <TierCard
+                    name="Pro Plus"
+                    price={billingCycle === "monthly" ? "£14.99/month" : "£149/year"}
+                    tier="pro_plus"
+                    current={false}
+                    features={["Plan everything, unlimited possibilities", "Sync across work, personal, side projects", "Spot patterns and bottlenecks fast with full plan history and completion data", "For people juggling it all"]}
+                    comingSoon={["Team plans \u2014 Turn solo planning into a shared workflow with up to 3 people"]}
+                    onSelect={() => handleUpgrade(billingCycle === "monthly" ? (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_MONTHLY || "price_1T595K4kVPZipsrTHBNxYUoT") : (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_ANNUAL || "price_1T596r4kVPZipsrTF2oGtiiA"))}
+                    loading={tierLoading}
+                    billingToggle={
+                      <div className="flex gap-1 mt-1">
+                        <button onClick={(e) => { e.stopPropagation(); setBillingCycle("monthly"); }} className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${billingCycle === "monthly" ? "bg-primary text-white border-primary" : "bg-white text-text-secondary border-border hover:border-primary/40"}`}>Monthly</button>
+                        <button onClick={(e) => { e.stopPropagation(); setBillingCycle("annual"); }} className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${billingCycle === "annual" ? "bg-primary text-white border-primary" : "bg-white text-text-secondary border-border hover:border-primary/40"}`}>Annual (save 17%)</button>
+                      </div>
+                    }
+                    hasSubscription={!!billingInfo?.stripeSubscriptionId}
+                  />
+                )}
+              </div>
+            )}
 
           </section>
 
@@ -930,33 +904,36 @@ export default function SettingsPage() {
               Help
             </h2>
 
-            <div className="space-y-3">
+            <div className="space-y-1">
               <a
                 href="mailto:support@planscope.app"
-                className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                className="flex items-center justify-between py-2.5 text-sm text-text hover:bg-bg-subtle -mx-2 px-2 rounded-md transition-colors"
               >
-                <ExternalLink size={14} />
-                Email support
+                <span>Email support</span>
+                <ChevronRight size={16} className="text-text-tertiary" />
               </a>
               <a
                 href="https://planscope.app/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                className="flex items-center justify-between py-2.5 text-sm text-text hover:bg-bg-subtle -mx-2 px-2 rounded-md transition-colors"
               >
-                <ExternalLink size={14} />
-                Privacy policy
+                <span>Privacy policy</span>
+                <ChevronRight size={16} className="text-text-tertiary" />
               </a>
               <a
                 href="https://planscope.app/terms"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                className="flex items-center justify-between py-2.5 text-sm text-text hover:bg-bg-subtle -mx-2 px-2 rounded-md transition-colors"
               >
-                <ExternalLink size={14} />
-                Terms of use
+                <span>Terms of use</span>
+                <ChevronRight size={16} className="text-text-tertiary" />
               </a>
             </div>
+            <p className="text-[10px] text-text-tertiary text-center mt-4">
+              Planscope v1.0
+            </p>
           </section>
         </div>
       </div>

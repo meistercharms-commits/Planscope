@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Lock, Zap, Target, Calendar, Mic } from "lucide-react";
 import Button from "@/components/ui/Button";
 import StatsCard from "@/components/ui/StatsCard";
+import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useAuth } from "@/lib/useAuth";
 
 interface PlanHistoryItem {
@@ -50,8 +52,12 @@ export default function HistoryPage() {
 
   if (loading || historyLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-lg text-text-secondary">Loading...</div>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <div className="space-y-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
       </div>
     );
   }
@@ -250,20 +256,13 @@ export default function HistoryPage() {
 
       {/* Plan list */}
       {plans.length === 0 ? (
-        <div className="text-center py-16 bg-bg-card rounded-lg p-8">
-          <img src="/icons/no_plans.svg" alt="" className="w-20 h-20 mx-auto mb-6 opacity-80" />
-          <h2 className="text-lg font-semibold text-text mb-2 font-display">
-            Your history starts here
-          </h2>
-          <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto leading-relaxed">
-            Once you&apos;ve made your first plan and the week passes, it&apos;ll show up here so you can look back at what you&apos;ve done.
-          </p>
-          <Link href="/new-plan">
-            <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors">
-              Create your first plan
-            </button>
-          </Link>
-        </div>
+        <EmptyState
+          icon="/icons/no_plans.svg"
+          title="Your history starts here"
+          description="Once you've made your first plan and the week passes, it'll show up here so you can look back at what you've done."
+          actionLabel="Create your first plan"
+          actionHref="/new-plan"
+        />
       ) : (
         <div className="space-y-3">
           {plans.map((plan) => {

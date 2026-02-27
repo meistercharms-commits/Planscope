@@ -4,14 +4,31 @@ import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 import { auth as firebaseAuth } from "@/lib/firebase";
-import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard, MessageSquare } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard, MessageSquare, WifiOff, Pause, Play, Timer } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useOnlineStatus } from "@/lib/use-online-status";
+import { FocusTimerProvider, useFocusTimer } from "@/lib/focus-timer-context";
+import { getCategoryColors } from "@/lib/category-colors";
+import { formatTime } from "@/lib/parse-time-estimate";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <FocusTimerProvider>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </FocusTimerProvider>
+  );
+}
+
+function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const isOnline = useOnlineStatus();
+  const { timer, timeLeft, isRunning, pauseTimer, resumeTimer } = useFocusTimer();
   const [menuOpen, setMenuOpen] = useState(false);
   const previewSaveAttempted = useRef(false);
+  const isOnFocusPage = pathname.includes("/focus/");
 
   // Fallback: save unsaved preview plan after auth loads
   // This catches cases where completeAuth() failed to save the preview
@@ -124,10 +141,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <Link
             href="/new-plan"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary-light rounded-md transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs sm:text-sm sm:px-3 sm:gap-1.5 font-medium text-primary hover:bg-primary-light rounded-md transition-colors whitespace-nowrap"
           >
-            <Plus size={18} />
-            <span className="hidden sm:inline">New Plan</span>
+            <Plus size={16} />
+            New Plan
           </Link>
 
           <div className="relative">
@@ -256,6 +273,47 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      {/* Offline banner */}
+      {!isOnline && (
+        <div className="bg-warning/15 border-b border-warning/30 px-4 py-2 flex items-center justify-center gap-2 animate-slide-open">
+          <WifiOff size={14} className="text-accent flex-shrink-0" />
+          <p className="text-xs text-text-secondary">
+            You&apos;re offline. Changes will sync when you reconnect.
+          </p>
+        </div>
+      )}
+
+      {/* Focus timer banner — shown on all pages except the focus page itself */}
+      {timer && !isOnFocusPage && timeLeft > 0 && (() => {
+        const colors = getCategoryColors(timer.category);
+        return (
+          <Link
+            href={`/plan/${timer.planId}/focus/${timer.taskId}`}
+            className="flex items-center gap-3 px-4 py-2 border-b border-border/60 bg-bg-card hover:bg-bg-subtle transition-colors"
+            style={{ borderLeftWidth: 3, borderLeftColor: colors.border }}
+          >
+            <Timer size={14} style={{ color: colors.border }} className="flex-shrink-0" />
+            <span className="text-xs text-text truncate flex-1 font-medium">
+              {timer.taskTitle}
+            </span>
+            <span className="text-xs font-semibold text-text tabular-nums">
+              {formatTime(timeLeft)}
+            </span>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isRunning) pauseTimer();
+                else resumeTimer();
+              }}
+              className="p-1 rounded-full hover:bg-bg-subtle transition-colors cursor-pointer"
+            >
+              {isRunning ? <Pause size={14} className="text-text-secondary" /> : <Play size={14} className="text-text-secondary" />}
+            </button>
+          </Link>
+        );
+      })()}
 
       {/* Content */}
       <main>{children}</main>

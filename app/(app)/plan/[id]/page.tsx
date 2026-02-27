@@ -20,6 +20,7 @@ import LearningsInsight from "@/components/ui/LearningsInsight";
 import ClarityCard from "@/components/ui/ClarityCard";
 import type { LearningsSummary, PlanTask, PlanMeta } from "@/types";
 import { getCategoryColors } from "@/lib/category-colors";
+import { parseTimeEstimate } from "@/lib/parse-time-estimate";
 
 interface PlanData {
   id: string;
@@ -43,7 +44,7 @@ export default function PlanReviewPage({
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [parkedOpen, setParkedOpen] = useState(true);
+  const [parkedOpen, setParkedOpen] = useState(false);
   const [doFirstOpen, setDoFirstOpen] = useState(true);
   const [thisWeekOpen, setThisWeekOpen] = useState(true);
   const [tweakOpen, setTweakOpen] = useState(false);
@@ -231,6 +232,33 @@ export default function PlanReviewPage({
 
       <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
+      {/* Summary strip */}
+      {(() => {
+        const activeCount = doFirst.length + thisWeek.length;
+        const totalSeconds = [...doFirst, ...thisWeek].reduce(
+          (sum, t) => sum + (t.timeEstimate ? parseTimeEstimate(t.timeEstimate) : 0),
+          0,
+        );
+        const totalMinutes = Math.round(totalSeconds / 60);
+        const timeLabel =
+          totalMinutes >= 60
+            ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
+            : `${totalMinutes}m`;
+        return (
+          <div className="animate-fade-in flex items-center justify-center gap-3 text-xs text-text-secondary mb-6">
+            <span className="font-medium">{activeCount} tasks</span>
+            <span className="text-border">·</span>
+            <span>{timeLabel} total</span>
+            {notThisWeek.length > 0 && (
+              <>
+                <span className="text-border">·</span>
+                <span>{notThisWeek.length} parked</span>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Do First */}
       {doFirst.length > 0 && (
         <section className="mb-8 animate-fade-in-up stagger-1" style={{ opacity: 0 }}>
@@ -323,31 +351,28 @@ export default function PlanReviewPage({
         </section>
       )}
 
-      {/* Reality Check */}
-      {meta?.reality_check && (
+      {/* Combined advice card — merges Reality Check + Real Talk when both present */}
+      {(meta?.reality_check || meta?.real_talk) && (
         <section className="mb-8 animate-fade-in-up stagger-3" style={{ opacity: 0 }}>
           <div className="bg-bg-card rounded-lg shadow-card p-4">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-text mb-2">
               <MessageCircle size={16} className="text-primary" />
-              Reality check
+              {meta?.reality_check && meta?.real_talk
+                ? "Before you start"
+                : meta?.reality_check
+                  ? "Reality check"
+                  : "Honest thought"}
             </h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              {meta.reality_check}
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* Real Talk (burnout advice) */}
-      {meta?.real_talk && (
-        <section className="mb-8 animate-fade-in-up stagger-3" style={{ opacity: 0 }}>
-          <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-text mb-2">
-              Honest thought
-            </h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              {meta.real_talk}
-            </p>
+            {meta?.reality_check && (
+              <p className="text-sm text-text-secondary leading-relaxed">
+                {meta.reality_check}
+              </p>
+            )}
+            {meta?.real_talk && (
+              <p className={`text-sm text-text-secondary leading-relaxed ${meta?.reality_check ? "mt-3 pt-3 border-t border-border" : ""}`}>
+                {meta.real_talk}
+              </p>
+            )}
           </div>
         </section>
       )}

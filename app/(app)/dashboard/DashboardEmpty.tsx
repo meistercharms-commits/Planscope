@@ -1,4 +1,4 @@
-import Link from "next/link";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default function DashboardEmpty() {
   return (
@@ -10,26 +10,13 @@ export default function DashboardEmpty() {
         Your active plans will appear here.
       </p>
 
-      <div className="text-center py-16 bg-bg-card rounded-lg p-8 shadow-card">
-        <img
-          src="/icons/no_plans.svg"
-          alt=""
-          className="w-20 h-20 mx-auto mb-6 opacity-80"
-        />
-        <h2 className="text-lg font-semibold text-text mb-2 font-display">
-          Fresh start this week
-        </h2>
-        <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto leading-relaxed">
-          Write down what&apos;s on your mind — big or small. We&apos;ll sort it
-          into a plan that actually feels doable.
-        </p>
-        <Link
-          href="/new-plan"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors"
-        >
-          Create a new plan
-        </Link>
-      </div>
+      <EmptyState
+        icon="/icons/no_plans.svg"
+        title="Fresh start this week"
+        description="Write down what's on your mind — big or small. We'll sort it into a plan that actually feels doable."
+        actionLabel="Create a new plan"
+        actionHref="/new-plan"
+      />
     </div>
   );
 }

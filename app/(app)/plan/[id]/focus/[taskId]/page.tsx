@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Pause, Play, Check, Timer } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { SkeletonText, SkeletonCircle } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
+import { useFocusTimer } from "@/lib/focus-timer-context";
 import { getCategoryColors } from "@/lib/category-colors";
 import { parseTimeEstimate, formatTime } from "@/lib/parse-time-estimate";
 import { scheduleFocusTimer, cancelFocusTimer } from "@/lib/notifications";
@@ -23,22 +25,24 @@ export default function FocusModePage({
   const router = useRouter();
   const { showToast } = useToast();
   const { user } = useAuth();
+  const focusTimer = useFocusTimer();
 
   const [task, setTask] = useState<PlanTask | null>(null);
   const [loading, setLoading] = useState(true);
   const [presetMinutes, setPresetMinutes] = useState(0);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [totalTime, setTotalTime] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
   const [markingDone, setMarkingDone] = useState(false);
-
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeLeftRef = useRef(0);
+  const [showSwitchPrompt, setShowSwitchPrompt] = useState(false);
 
   const isFree = !user || user.tier === "free";
+
+  // Derive timer state from context
+  const isThisTask = focusTimer.timer?.taskId === taskId;
+  const hasStarted = isThisTask && !!focusTimer.timer;
+  const timeLeft = isThisTask ? focusTimer.timeLeft : selectedMinutes * 60;
+  const totalTime = isThisTask ? focusTimer.timer!.totalTime : selectedMinutes * 60;
+  const isRunning = isThisTask && focusTimer.isRunning;
+  const isComplete = isThisTask && focusTimer.isComplete;
 
   // Fetch task data
   useEffect(() => {
@@ -58,10 +62,9 @@ export default function FocusModePage({
         const seconds = parseTimeEstimate(foundTask.timeEstimate);
         const mins = Math.min(Math.round(seconds / 60), 60);
         setPresetMinutes(mins);
-        setSelectedMinutes(mins);
-        setTotalTime(mins * 60);
-        setTimeLeft(mins * 60);
-        timeLeftRef.current = mins * 60;
+        if (!isThisTask) {
+          setSelectedMinutes(mins);
+        }
       } catch {
         router.push(`/plan/${id}/progress`);
       } finally {
@@ -69,59 +72,50 @@ export default function FocusModePage({
       }
     }
     fetchData();
-  }, [id, taskId, router]);
-
-  // Timer interval
-  useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        timeLeftRef.current -= 1;
-        if (timeLeftRef.current <= 0) {
-          timeLeftRef.current = 0;
-          setTimeLeft(0);
-          setIsRunning(false);
-          setIsComplete(true);
-          if (intervalRef.current) clearInterval(intervalRef.current);
-        } else {
-          setTimeLeft(timeLeftRef.current);
-        }
-      }, 1000);
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isRunning]);
+  }, [id, taskId, router, isThisTask]);
 
   function handleStart() {
+    // Check if another task has an active timer
+    if (focusTimer.timer && focusTimer.timer.taskId !== taskId) {
+      setShowSwitchPrompt(true);
+      return;
+    }
+    startTimerForThisTask();
+  }
+
+  function startTimerForThisTask() {
+    if (!task) return;
     const seconds = selectedMinutes * 60;
-    setTotalTime(seconds);
-    setTimeLeft(seconds);
-    timeLeftRef.current = seconds;
-    setHasStarted(true);
-    setIsRunning(true);
-    // Schedule notification for when timer ends (in case user leaves app)
-    scheduleFocusTimer(taskId, seconds).catch((err) => console.error("[Focus] Timer schedule failed:", err));
+    focusTimer.startTimer({
+      planId: id,
+      taskId,
+      taskTitle: task.title,
+      category: task.category || "other",
+      totalTime: seconds,
+    });
+    scheduleFocusTimer(taskId, seconds).catch((err) =>
+      console.error("[Focus] Timer schedule failed:", err),
+    );
+    setShowSwitchPrompt(false);
   }
 
   function togglePause() {
     if (isComplete) return;
-    setIsRunning((prev) => !prev);
+    if (isRunning) focusTimer.pauseTimer();
+    else focusTimer.resumeTimer();
   }
 
   function selectTime(mins: number) {
     if (hasStarted) return;
     setSelectedMinutes(mins);
-    const seconds = mins * 60;
-    setTotalTime(seconds);
-    setTimeLeft(seconds);
-    timeLeftRef.current = seconds;
   }
 
   async function handleMarkDone() {
     setMarkingDone(true);
-    // Cancel the scheduled "time's up" notification since user is done early or already here
-    cancelFocusTimer(taskId).catch((err) => console.error("[Focus] Timer cancel failed:", err));
+    cancelFocusTimer(taskId).catch((err) =>
+      console.error("[Focus] Timer cancel failed:", err),
+    );
+    focusTimer.clearTimer();
     try {
       const res = await fetch(`/api/plans/${id}/tasks/${taskId}`, {
         method: "PATCH",
@@ -139,8 +133,10 @@ export default function FocusModePage({
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-lg text-text-secondary">Loading...</div>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4">
+        <SkeletonText width="30%" height={12} />
+        <SkeletonCircle size={220} />
+        <SkeletonText width="50%" height={16} />
       </div>
     );
   }
@@ -319,6 +315,23 @@ export default function FocusModePage({
           </div>
         )}
 
+        {/* Switch task prompt */}
+        {showSwitchPrompt && focusTimer.timer && (
+          <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 mb-4 max-w-sm text-center">
+            <p className="text-sm text-text mb-3">
+              You have a timer running for <span className="font-semibold">{focusTimer.timer.taskTitle}</span>. Switch to this task?
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button size="sm" onClick={startTimerForThisTask}>
+                Switch
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowSwitchPrompt(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Controls */}
         {!hasStarted ? (
           <Button onClick={handleStart} size="lg">
@@ -360,7 +373,10 @@ export default function FocusModePage({
             </Button>
             <div>
               <button
-                onClick={() => router.push(`/plan/${id}/progress`)}
+                onClick={() => {
+                  focusTimer.clearTimer();
+                  router.push(`/plan/${id}/progress`);
+                }}
                 className="text-sm text-text-secondary hover:text-text transition-colors mt-2 cursor-pointer"
               >
                 Not done yet? Return to plan

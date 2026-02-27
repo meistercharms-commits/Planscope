@@ -16,11 +16,13 @@ import {
   Zap,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
 import { getCategoryColors } from "@/lib/category-colors";
 import { triggerCelebration, scheduleNudges, cancelNudges } from "@/lib/notifications";
+import { SkeletonTaskCard } from "@/components/ui/Skeleton";
 import { parseTimeEstimate } from "@/lib/parse-time-estimate";
 import type { PlanTask } from "@/types";
 
@@ -257,6 +259,7 @@ export default function PlanProgressPage({
   }
 
   const [archiving, setArchiving] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
 
   async function archivePlan() {
     if (!plan || archiving) return;
@@ -282,8 +285,13 @@ export default function PlanProgressPage({
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-lg text-text-secondary">Loading your plan...</div>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+        <div className="space-y-3">
+          <SkeletonTaskCard />
+          <SkeletonTaskCard />
+          <SkeletonTaskCard />
+          <SkeletonTaskCard />
+        </div>
       </div>
     );
   }
@@ -638,18 +646,48 @@ export default function PlanProgressPage({
           {/* Archive plan */}
           <div className="pt-4 border-t border-border">
             <button
-              onClick={archivePlan}
-              disabled={archiving}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm text-text-secondary hover:text-text transition-colors cursor-pointer disabled:opacity-50"
+              onClick={() => setShowArchiveModal(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 text-sm text-text-secondary hover:text-text transition-colors cursor-pointer"
             >
               <Archive size={16} />
-              {archiving ? "Archiving..." : "Archive this plan"}
+              Archive this plan
             </button>
             <p className="text-xs text-text-tertiary text-center mt-1">
               Moves this plan to your history so you can start fresh.
             </p>
           </div>
         </div>}
+
+      {/* Archive confirmation modal */}
+      <Modal
+        open={showArchiveModal}
+        onClose={() => setShowArchiveModal(false)}
+        title="Archive this plan?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            This will move your plan to history. You can still view it there, but
+            you won&apos;t be able to make changes.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                setShowArchiveModal(false);
+                archivePlan();
+              }}
+              loading={archiving}
+            >
+              Archive
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowArchiveModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
       </div>
     </div>
   );
@@ -703,7 +741,7 @@ function TaskProgressCard({
   return (
     <div
       className={`rounded-lg transition-all duration-300 border-l-[3px] ${
-        isArchived ? "" : isDimmed ? "pointer-events-none" : "cursor-pointer"
+        isArchived ? "" : "cursor-pointer"
       } ${
         isDone
           ? `bg-bg-subtle opacity-60${justCompleted ? " animate-completion-flash" : ""}`

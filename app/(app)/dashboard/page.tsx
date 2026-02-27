@@ -17,13 +17,18 @@ export default async function DashboardPage() {
 
   const tier = await getUserTier(auth.userId);
 
+  // Archive plans from past weeks (non-critical — fail silently)
+  try {
+    await archiveStalePlans(auth.userId);
+  } catch (e) {
+    // Firestore composite index may still be building — skip archiving
+    console.error("Dashboard: auto-archive failed (non-critical):", (e as Error).message);
+  }
+
   let activePlans;
   try {
-    // Archive plans from past weeks before fetching current ones
-    await archiveStalePlans(auth.userId);
     activePlans = await getActivePlans(auth.userId);
   } catch (e) {
-    // Firestore index may still be building — show empty state
     console.error("Dashboard: failed to fetch active plans:", (e as Error).message);
     return <DashboardEmpty />;
   }

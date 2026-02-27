@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { auth as firebaseAuth } from "@/lib/firebase";
 import { usePathname } from "next/navigation";
 import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard, MessageSquare, WifiOff, Pause, Play, Timer } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useOnlineStatus } from "@/lib/use-online-status";
 import { FocusTimerProvider, useFocusTimer } from "@/lib/focus-timer-context";
 import { getCategoryColors } from "@/lib/category-colors";
@@ -27,12 +27,32 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const isOnline = useOnlineStatus();
   const { timer, timeLeft, isRunning, pauseTimer, resumeTimer } = useFocusTimer();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu on Escape key
+  // Focus first menu item when menu opens; handle arrow keys + Escape
   useEffect(() => {
     if (!menuOpen) return;
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    // Focus first interactive item
+    const items = menu.querySelectorAll<HTMLElement>('[role="menuitem"]');
+    items[0]?.focus();
+
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const items = menu!.querySelectorAll<HTMLElement>('[role="menuitem"]');
+        const focused = document.activeElement;
+        let idx = Array.from(items).indexOf(focused as HTMLElement);
+        if (e.key === "ArrowDown") idx = (idx + 1) % items.length;
+        else idx = (idx - 1 + items.length) % items.length;
+        items[idx]?.focus();
+      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
@@ -174,7 +194,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                   className="fixed inset-0 z-40"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-border rounded-lg shadow-lg py-1 animate-scale-in z-50">
+                <div ref={menuRef} role="menu" className="absolute right-0 top-full mt-1 w-48 bg-white border border-border rounded-lg shadow-lg py-1 animate-scale-in z-50">
                   {isLoggedIn ? (
                     <>
                       <div className="px-3 py-2 text-xs text-text-secondary border-b border-border">
@@ -182,35 +202,43 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                       </div>
                       <Link
                         href="/dashboard"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <LayoutDashboard size={16} />
                         My Plans
                       </Link>
                       <Link
                         href="/history"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <Calendar size={16} />
                         Plan History
                       </Link>
                       <Link
                         href="/settings"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <Settings size={16} />
                         Profile & Settings
                       </Link>
                       <div className="border-t border-border my-1" />
                       <button
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => {
                           setMenuOpen(false);
                           logout();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors cursor-pointer"
                       >
                         <LogOut size={16} />
                         Log out
@@ -218,8 +246,10 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                       <div className="border-t border-border my-1" />
                       <a
                         href="mailto:support@planscope.app?subject=Feedback"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <MessageSquare size={16} />
                         Share Feedback
@@ -229,24 +259,30 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                     <>
                       <Link
                         href="/dashboard"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <LayoutDashboard size={16} />
                         My Plans
                       </Link>
                       <Link
                         href="/history"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <Calendar size={16} />
                         Plan History
                       </Link>
                       <Link
                         href="/settings"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <Settings size={16} />
                         Profile & Settings
@@ -254,16 +290,20 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                       <div className="border-t border-border my-1" />
                       <Link
                         href="/signup"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <User size={16} />
                         Save my plans
                       </Link>
                       <Link
                         href="/login"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <LogOut size={16} />
                         Log in
@@ -271,8 +311,10 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                       <div className="border-t border-border my-1" />
                       <a
                         href="mailto:support@planscope.app?subject=Feedback"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-subtle transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
                       >
                         <MessageSquare size={16} />
                         Share Feedback

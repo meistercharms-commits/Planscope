@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { X } from "lucide-react";
 
 interface ToastAction {
@@ -27,6 +27,8 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const showToast = useCallback(
     (message: string, type: Toast["type"] = "success", action?: ToastAction) => {
@@ -42,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-sm:left-4 max-sm:right-4 max-sm:bottom-4">
+      <div {...(mounted ? { role: "status", "aria-live": "polite" as const } : {})} className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-sm:left-4 max-sm:right-4 max-sm:bottom-4">
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -51,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ? "bg-primary"
                 : toast.type === "warning"
                 ? "bg-warning"
-                : "bg-error"
+                : "bg-accent"
             }`}
           >
             <span className="flex-1">{toast.message}</span>

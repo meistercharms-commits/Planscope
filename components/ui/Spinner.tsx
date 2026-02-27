@@ -15,11 +15,13 @@ interface SpinnerProps {
   statusMessages?: string[];
   /** Expected duration in seconds — controls progress speed */
   duration?: number;
+  onCancel?: () => void;
 }
 
 export default function Spinner({
   statusMessages = defaultMessages,
   duration = 40,
+  onCancel,
 }: SpinnerProps) {
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -62,6 +64,15 @@ export default function Spinner({
         <p className="text-xs text-text-tertiary">
           This usually takes 30–40 seconds
         </p>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs text-text-secondary hover:text-text transition-colors mt-2 cursor-pointer"
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </div>
   );

@@ -88,7 +88,7 @@ export default function DashboardMultiPlan({
               >
                 <div className="flex items-center justify-between mb-1">
                   {isEditing ? (
-                    <div className="flex-1 mr-2" onClick={(e) => e.preventDefault()}>
+                    <div className="flex-1 mr-2" onClick={(e) => e.preventDefault()} onPointerDown={(e) => e.stopPropagation()}>
                       <input
                         ref={inputRef}
                         type="text"
@@ -100,6 +100,7 @@ export default function DashboardMultiPlan({
                           if (e.key === "Escape") setEditingId(null);
                         }}
                         onClick={(e) => e.preventDefault()}
+                        onPointerDown={(e) => e.stopPropagation()}
                         maxLength={50}
                         className="w-full font-semibold text-text font-display bg-transparent border-b border-primary outline-none py-0.5"
                       />

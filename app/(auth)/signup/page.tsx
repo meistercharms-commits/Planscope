@@ -2,11 +2,12 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { humanizeAuthError } from "@/lib/auth-errors";
 
 const oauthErrors: Record<string, string> = {
   google_denied: "Google sign-in was cancelled.",
@@ -23,13 +24,13 @@ const oauthErrors: Record<string, string> = {
 
 function SignupForm() {
   const { signup, loginWithGoogle, loginWithApple } = useAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -40,7 +41,7 @@ function SignupForm() {
     try {
       await signup(email, password);
     } catch (err) {
-      setError((err as Error).message);
+      setError(humanizeAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ function SignupForm() {
     try {
       await loginWithGoogle();
     } catch (err) {
-      setError((err as Error).message);
+      setError(humanizeAuthError(err));
     } finally {
       setOauthLoading(null);
     }
@@ -64,7 +65,7 @@ function SignupForm() {
     try {
       await loginWithApple();
     } catch (err) {
-      setError((err as Error).message);
+      setError(humanizeAuthError(err));
     } finally {
       setOauthLoading(null);
     }
@@ -72,13 +73,13 @@ function SignupForm() {
 
   return (
     <div className="w-full max-w-sm animate-fade-in">
-      <button
-        onClick={() => router.back()}
+      <Link
+        href="/new-plan"
         className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors mb-6"
       >
         <ArrowLeft size={16} />
         Back
-      </button>
+      </Link>
 
       <div className="mb-8">
         <img
@@ -96,7 +97,7 @@ function SignupForm() {
       </p>
 
       {oauthError && oauthErrors[oauthError] && (
-        <div className="px-4 py-3 bg-error/5 border border-error/20 rounded-md text-sm text-error mb-4">
+        <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B] mb-4">
           {oauthErrors[oauthError]}
         </div>
       )}
@@ -148,18 +149,33 @@ function SignupForm() {
           required
         />
 
-        <Input
-          label="Password"
-          type="password"
-          placeholder="At least 6 characters"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={6}
-        />
+        <div className="relative">
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            placeholder="At least 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+          {password.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[38px] text-text-tertiary hover:text-text-secondary transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          )}
+          {password.length > 0 && (
+            <PasswordStrength password={password} />
+          )}
+        </div>
 
         {error && (
-          <div className="px-4 py-3 bg-error/5 border border-error/20 rounded-md text-sm text-error">
+          <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B]">
             {error}
           </div>
         )}
@@ -175,6 +191,35 @@ function SignupForm() {
           Log in
         </Link>
       </p>
+    </div>
+  );
+}
+
+function PasswordStrength({ password }: { password: string }) {
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  const labels = ["Too short", "Weak", "Fair", "Good", "Strong"];
+  const colors = ["bg-border", "bg-accent", "bg-warning", "bg-primary/60", "bg-primary"];
+  const level = Math.min(score, 4);
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              i <= level - 1 ? colors[level] : "bg-border"
+            }`}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-text-tertiary">{labels[level]}</p>
     </div>
   );
 }

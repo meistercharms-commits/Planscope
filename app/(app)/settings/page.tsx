@@ -15,6 +15,8 @@ import {
   Brain,
   Smartphone,
   Bell,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -48,6 +50,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
   // Export
@@ -405,10 +408,10 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       <div className="animate-fade-in">
-        <h1 className="text-[28px] font-bold text-text font-display">
+        <h1 className="text-[28px] font-bold text-text font-display mb-2">
           Profile & Settings
         </h1>
-        <p className="text-sm text-text-secondary mt-1 mb-8">
+        <p className="text-sm text-text-secondary mb-8">
           Manage your account details.
         </p>
 
@@ -489,16 +492,28 @@ export default function SettingsPage() {
                           onChange={(e) => setNewEmail(e.target.value)}
                           required
                         />
-                        <Input
-                          label="Current password"
-                          type="password"
-                          placeholder="Confirm your password"
-                          value={emailPassword}
-                          onChange={(e) => setEmailPassword(e.target.value)}
-                          required
-                        />
+                        <div className="relative">
+                          <Input
+                            label="Current password"
+                            type={showPasswords ? "text" : "password"}
+                            placeholder="Confirm your password"
+                            value={emailPassword}
+                            onChange={(e) => setEmailPassword(e.target.value)}
+                            required
+                          />
+                          {emailPassword.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowPasswords(!showPasswords)}
+                              className="absolute right-3 top-[38px] text-text-tertiary hover:text-text-secondary transition-colors"
+                              aria-label={showPasswords ? "Hide password" : "Show password"}
+                            >
+                              {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          )}
+                        </div>
                         {emailError && (
-                          <p className="text-sm text-error">{emailError}</p>
+                          <p className="text-sm text-[#8A6D4B]">{emailError}</p>
                         )}
                         <div className="flex gap-2">
                           <Button type="submit" size="sm" loading={emailLoading}>
@@ -537,17 +552,29 @@ export default function SettingsPage() {
                         onSubmit={handleChangePassword}
                         className="mt-3 space-y-3 pl-0 animate-slide-open"
                       >
-                        <Input
-                          label="Current password"
-                          type="password"
-                          placeholder="Your current password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          required
-                        />
+                        <div className="relative">
+                          <Input
+                            label="Current password"
+                            type={showPasswords ? "text" : "password"}
+                            placeholder="Your current password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            required
+                          />
+                          {currentPassword.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowPasswords(!showPasswords)}
+                              className="absolute right-3 top-[38px] text-text-tertiary hover:text-text-secondary transition-colors"
+                              aria-label={showPasswords ? "Hide password" : "Show password"}
+                            >
+                              {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          )}
+                        </div>
                         <Input
                           label="New password"
-                          type="password"
+                          type={showPasswords ? "text" : "password"}
                           placeholder="At least 6 characters"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -556,7 +583,7 @@ export default function SettingsPage() {
                         />
                         <Input
                           label="Confirm new password"
-                          type="password"
+                          type={showPasswords ? "text" : "password"}
                           placeholder="Type it again"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -564,7 +591,7 @@ export default function SettingsPage() {
                           minLength={6}
                         />
                         {passwordError && (
-                          <p className="text-sm text-error">{passwordError}</p>
+                          <p className="text-sm text-[#8A6D4B]">{passwordError}</p>
                         )}
                         <div className="flex gap-2">
                           <Button type="submit" size="sm" loading={passwordLoading}>
@@ -960,7 +987,7 @@ export default function SettingsPage() {
             your tasks. This action cannot be undone.
           </p>
           <p className="text-sm font-medium text-text">
-            Type <span className="text-error font-semibold">DELETE</span> to
+            Type <span className="text-accent font-semibold">DELETE</span> to
             confirm.
           </p>
           <Input
@@ -1151,16 +1178,16 @@ function TierCard({
         {features.map((f) => (
           <li
             key={f}
-            className="flex items-center gap-2 text-sm text-text-secondary"
+            className="flex items-start gap-2 text-xs sm:text-sm text-text-secondary"
           >
-            <CheckIcon size={14} className="text-primary flex-shrink-0" />
+            <CheckIcon size={14} className="text-primary flex-shrink-0 mt-0.5" />
             {f}
           </li>
         ))}
         {comingSoon?.map((f) => (
           <li
             key={f}
-            className="flex items-center gap-2 text-sm text-text-tertiary"
+            className="flex items-start gap-2 text-xs sm:text-sm text-text-tertiary"
           >
             <CheckIcon size={14} className="text-text-tertiary flex-shrink-0" />
             {f}{" "}

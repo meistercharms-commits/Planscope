@@ -13,6 +13,8 @@ interface SegmentedControlProps {
   options: Option[];
   value: string;
   onChange: (value: string) => void;
+  required?: boolean;
+  error?: boolean;
 }
 
 export default function SegmentedControl({
@@ -20,15 +22,19 @@ export default function SegmentedControl({
   options,
   value,
   onChange,
+  required,
+  error,
 }: SegmentedControlProps) {
   const compact = options.length >= 5;
 
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-sm font-medium text-text">{label}</label>
+        <label className="block text-sm font-medium text-text">
+          {label}{required && <span className="text-accent ml-0.5">*</span>}
+        </label>
       )}
-      <div className={compact ? "grid grid-cols-5 gap-1.5" : "flex gap-2"}>
+      <div className={`${compact ? "grid grid-cols-5 gap-1.5" : "flex gap-2"} ${error ? "ring-1 ring-accent/40 rounded-full p-0.5" : ""}`}>
         {options.map((option) => (
           <button
             key={option.value}

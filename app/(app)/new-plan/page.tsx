@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -44,6 +44,8 @@ export default function NewPlanPage() {
   const [focusArea, setFocusArea] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [attempted, setAttempted] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Tier info
   const [tierData, setTierData] = useState<TierData | null>(null);
@@ -130,6 +132,7 @@ export default function NewPlanPage() {
     setLoading(true);
 
     const controller = new AbortController();
+    abortRef.current = controller;
     const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
 
     try {
@@ -198,7 +201,11 @@ export default function NewPlanPage() {
   }
 
   if (loading) {
-    return <Spinner />;
+    return <Spinner onCancel={() => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setLoading(false);
+    }} />;
   }
 
   // Plan limit reached
@@ -228,6 +235,11 @@ export default function NewPlanPage() {
               </Link>
             </p>
           )}
+          <div className="mt-6">
+            <Link href="/dashboard" className="text-sm text-primary font-medium hover:underline">
+              Back to dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -312,7 +324,7 @@ export default function NewPlanPage() {
                   type="checkbox"
                   checked={useCopy}
                   onChange={(e) => setUseCopy(e.target.checked)}
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                  className="w-4 h-4 rounded border-border text-primary focus-visible:ring-primary"
                 />
                 <div>
                   <p className="text-sm font-medium text-text">Copy last week&apos;s plan</p>
@@ -389,7 +401,7 @@ export default function NewPlanPage() {
                             return next;
                           });
                         }}
-                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary mt-0.5"
+                        className="w-4 h-4 rounded border-border text-primary focus-visible:ring-primary mt-0.5"
                       />
                       <span className="text-sm text-text">{task.title}</span>
                     </label>
@@ -432,7 +444,7 @@ export default function NewPlanPage() {
                 )}
               </div>
               {speechError && (
-                <p className="text-xs text-red-500 mt-1">{speechError}</p>
+                <p className="text-xs text-[#8A6D4B] mt-1">{speechError}</p>
               )}
               {isListening && (
                 <p className="text-xs text-primary mt-1 flex items-center gap-1.5">
@@ -456,6 +468,8 @@ export default function NewPlanPage() {
           {/* Constraints */}
           <SegmentedControl
             label="Time available"
+            required
+            error={attempted && !timeAvailable}
             options={[
               { value: "low", label: "Low", icon: "/icons/low_time.svg" },
               { value: "medium", label: "Medium", icon: "/icons/medium_time.svg" },
@@ -467,6 +481,8 @@ export default function NewPlanPage() {
 
           <SegmentedControl
             label="Energy level"
+            required
+            error={attempted && !energyLevel}
             options={[
               { value: "drained", label: "Drained", icon: "/icons/drained.svg" },
               { value: "ok", label: "OK", icon: "/icons/ok_energy.svg" },
@@ -478,6 +494,8 @@ export default function NewPlanPage() {
 
           <SegmentedControl
             label="Main focus"
+            required
+            error={attempted && !focusArea}
             options={[
               { value: "work", label: "Work", icon: "/icons/work.svg" },
               { value: "health", label: "Health", icon: "/icons/health.svg" },
@@ -501,14 +519,22 @@ export default function NewPlanPage() {
           )}
 
           {/* Submit */}
-          <Button
-            type="submit"
-            fullWidth
-            size="lg"
-            disabled={(!useCopy && dump.length < 20 && selectedParked.size === 0) || !timeAvailable || !energyLevel || !focusArea}
-          >
-            {useCopy ? "Copy & make my plan" : "Make me a plan"}
-          </Button>
+          <div>
+            <Button
+              type="submit"
+              fullWidth
+              size="lg"
+              disabled={(!useCopy && dump.length < 20 && selectedParked.size === 0) || !timeAvailable || !energyLevel || !focusArea}
+              onClick={() => setAttempted(true)}
+            >
+              {useCopy ? "Copy & make my plan" : "Make me a plan"}
+            </Button>
+            {attempted && (!timeAvailable || !energyLevel || !focusArea) && (
+              <p className="text-xs text-[#8A6D4B] mt-2 text-center">
+                Please select{!timeAvailable ? " time available" : ""}{!energyLevel ? `${!timeAvailable ? "," : ""} energy level` : ""}{!focusArea ? `${!timeAvailable || !energyLevel ? "," : ""} main focus` : ""} above.
+              </p>
+            )}
+          </div>
         </form>
 
         {/* Sign-up nudge for anonymous users */}

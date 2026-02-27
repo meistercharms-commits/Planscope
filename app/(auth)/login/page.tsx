@@ -2,11 +2,14 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth as firebaseAuth } from "@/lib/firebase";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { humanizeAuthError } from "@/lib/auth-errors";
 
 const oauthErrors: Record<string, string> = {
   google_denied: "Google sign-in was cancelled.",
@@ -19,14 +22,29 @@ const oauthErrors: Record<string, string> = {
 
 function LoginForm() {
   const { login, loginWithGoogle, loginWithApple } = useAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+
+  async function handleForgotPassword() {
+    if (!email) {
+      setError("Enter your email address first, then tap \"Forgot password\".");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(firebaseAuth, email);
+      setResetSent(true);
+      setError("");
+    } catch (err) {
+      setError(humanizeAuthError(err));
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,7 +54,7 @@ function LoginForm() {
     try {
       await login(email, password);
     } catch (err) {
-      setError((err as Error).message);
+      setError(humanizeAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -48,7 +66,7 @@ function LoginForm() {
     try {
       await loginWithGoogle();
     } catch (err) {
-      setError((err as Error).message);
+      setError(humanizeAuthError(err));
     } finally {
       setOauthLoading(null);
     }
@@ -60,7 +78,7 @@ function LoginForm() {
     try {
       await loginWithApple();
     } catch (err) {
-      setError((err as Error).message);
+      setError(humanizeAuthError(err));
     } finally {
       setOauthLoading(null);
     }
@@ -68,13 +86,13 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm animate-fade-in">
-      <button
-        onClick={() => router.back()}
+      <Link
+        href="/new-plan"
         className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition-colors mb-6"
       >
         <ArrowLeft size={16} />
         Back
-      </button>
+      </Link>
 
       <div className="mb-8">
         <img
@@ -89,7 +107,7 @@ function LoginForm() {
       </h2>
 
       {oauthError && oauthErrors[oauthError] && (
-        <div className="px-4 py-3 bg-error/5 border border-error/20 rounded-md text-sm text-error mb-4">
+        <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B] mb-4">
           {oauthErrors[oauthError]}
         </div>
       )}
@@ -141,17 +159,43 @@ function LoginForm() {
           required
         />
 
-        <Input
-          label="Password"
-          type="password"
-          placeholder="Your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="relative">
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {password.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[38px] text-text-tertiary hover:text-text-secondary transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          )}
+        </div>
+
+        <div className="flex justify-end -mt-1">
+          {resetSent ? (
+            <p className="text-xs text-primary">Check your email for a reset link.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-xs text-text-secondary hover:text-primary transition-colors cursor-pointer"
+            >
+              Forgot password?
+            </button>
+          )}
+        </div>
 
         {error && (
-          <div className="px-4 py-3 bg-error/5 border border-error/20 rounded-md text-sm text-error">
+          <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B]">
             {error}
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, EyeOff, Plus, ChevronDown, ChevronRight, Check, Bookmark, Archive } from "lucide-react";
+import { Eye, EyeOff, Plus, ChevronDown, ChevronRight, Check, Bookmark, Archive, Zap } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { getCategoryColors, type CategoryColorScheme } from "@/lib/category-colors";
@@ -251,6 +251,10 @@ export default function PlanProgressPreviewPage() {
                       style={{ backgroundColor: lifeColors.badge, color: lifeColors.badgeText }}
                     >
                       {lifeColors.label}
+                    </span>
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 bg-accent/10 text-accent">
+                      <Zap size={10} className="fill-current" />
+                      Quick win
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-1.5 ml-6">

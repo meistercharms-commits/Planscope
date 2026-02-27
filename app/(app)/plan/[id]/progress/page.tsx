@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import {
   Bookmark,
   Archive,
   Target,
+  Zap,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -20,6 +21,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
 import { getCategoryColors } from "@/lib/category-colors";
 import { triggerCelebration, scheduleNudges, cancelNudges } from "@/lib/notifications";
+import { parseTimeEstimate } from "@/lib/parse-time-estimate";
 import type { PlanTask } from "@/types";
 
 interface PlanData {
@@ -132,12 +134,18 @@ export default function PlanProgressPage({
 
         let msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];
 
-        if (completionPercent === 50) {
-          msg = "Halfway there. Keep it going.";
-        } else if (completionPercent === 75) {
-          msg = "Nearly done. You're in the home stretch.";
-        } else if (completionPercent === 100) {
+        if (completionPercent === 100) {
           msg = "All done. Great work.";
+        } else if (totalActive - doneCount === 1) {
+          msg = "Just one left. You\u2019ve got this.";
+        } else if (completionPercent === 75) {
+          msg = "Nearly done. You\u2019re in the home stretch.";
+        } else if (completionPercent === 50) {
+          msg = "Halfway there. Keep it going.";
+        } else if (completionPercent >= 25 && Math.round(((doneCount - 1) / totalActive) * 100) < 25) {
+          msg = "Quarter of the way. Nice pace.";
+        } else if (doneCount === 1) {
+          msg = "First one done. You\u2019re on your way.";
         }
 
         showToast(msg, "success", {
@@ -289,6 +297,20 @@ export default function PlanProgressPage({
   );
   const doneCount = activeTasks.filter((t) => t.status === "done").length;
   const totalActive = activeTasks.length;
+  const overallPercent = totalActive > 0 ? Math.round((doneCount / totalActive) * 100) : 0;
+
+  const encouragement =
+    overallPercent === 0
+      ? null
+      : overallPercent === 100
+        ? "All done. Take a breath."
+        : overallPercent >= 75
+          ? "Nearly there. Finish strong."
+          : overallPercent >= 50
+            ? "Over halfway. The end is in sight."
+            : overallPercent >= 25
+              ? "Solid progress. Keep going."
+              : "You\u2019ve started. That\u2019s the hardest part.";
 
   const doFirst = plan.tasks.filter((t) => t.section === "do_first");
   const thisWeek = plan.tasks.filter((t) => t.section === "this_week");
@@ -342,9 +364,32 @@ export default function PlanProgressPage({
         .animate-expand-fade-in {
           animation: expandFadeIn 0.2s ease-out 0.15s both;
         }
+        @keyframes cardCompletionFlash {
+          0% { background-color: var(--flash-color); }
+          100% { background-color: transparent; }
+        }
+        .animate-completion-flash {
+          animation: cardCompletionFlash 0.6s ease-out forwards;
+        }
+        @keyframes strikethroughReveal {
+          from { text-decoration-color: transparent; }
+          to { text-decoration-color: currentColor; }
+        }
+        .animate-strikethrough {
+          text-decoration: line-through;
+          text-decoration-color: transparent;
+          animation: strikethroughReveal 0.4s ease-out 0.15s forwards;
+        }
       `}</style>
       {/* Progress Bar */}
       <ProgressBar done={doneCount} total={totalActive} />
+      {encouragement && (
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <p className="text-xs text-text-secondary text-center pt-2 italic">
+            {encouragement}
+          </p>
+        </div>
+      )}
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
         {/* Archived banner */}
@@ -639,6 +684,20 @@ function TaskProgressCard({
   const [hovered, setHovered] = useState(false);
   const [popKey, setPopKey] = useState(0);
 
+  // Detect when a task transitions to done for animation
+  const [justCompleted, setJustCompleted] = useState(false);
+  const prevDoneRef = useRef(isDone);
+  useEffect(() => {
+    if (isDone && !prevDoneRef.current) {
+      setJustCompleted(true);
+      const timer = setTimeout(() => setJustCompleted(false), 600);
+      return () => clearTimeout(timer);
+    }
+    prevDoneRef.current = isDone;
+  }, [isDone]);
+
+  const isQuickWin = !isDone && task.timeEstimate !== null && parseTimeEstimate(task.timeEstimate) <= 300;
+
   if (hidden) return null;
 
   return (
@@ -647,7 +706,7 @@ function TaskProgressCard({
         isArchived ? "" : isDimmed ? "pointer-events-none" : "cursor-pointer"
       } ${
         isDone
-          ? "bg-bg-subtle opacity-60"
+          ? `bg-bg-subtle opacity-60${justCompleted ? " animate-completion-flash" : ""}`
           : isDimmed
             ? "opacity-40"
             : isNext && !isArchived
@@ -657,6 +716,7 @@ function TaskProgressCard({
       style={{
         borderLeftColor: isDone ? colors.border + "80" : colors.border,
         backgroundColor: !isDone && !isArchived && hovered ? colors.hoverBg : undefined,
+        ...(justCompleted ? { "--flash-color": colors.border + "26" } as React.CSSProperties : {}),
         ...(isNext && !isDone && !isArchived ? {
           "--pulse-color": colors.border,
           "--pulse-color-dim": colors.border + "40",
@@ -717,7 +777,11 @@ function TaskProgressCard({
             />
             <p
               className={`font-medium text-sm transition-all duration-200 flex-1 ${
-                isDone ? "line-through text-text-secondary" : "text-text"
+                isDone
+                  ? justCompleted
+                    ? "animate-strikethrough text-text-secondary"
+                    : "line-through text-text-secondary"
+                  : "text-text"
               }`}
             >
               {isNext && !isDone && !isArchived && (
@@ -736,6 +800,12 @@ function TaskProgressCard({
                 style={{ backgroundColor: colors.badge, color: colors.badgeText }}
               >
                 {colors.label}
+              </span>
+            )}
+            {isQuickWin && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 bg-accent/10 text-accent">
+                <Zap size={10} className="fill-current" />
+                Quick win
               </span>
             )}
           </div>

@@ -97,6 +97,7 @@ export default function NewPlanPage() {
 
   const canUseCopy = lastPlan && (tierData?.tier === "pro" || tierData?.tier === "pro_plus");
   const isProPlus = tierData?.tier === "pro_plus";
+  const isPaidUser = tierData?.tier === "pro" || tierData?.tier === "pro_plus";
   const plansRemaining = tierData?.usage.plansRemaining;
   const plansLimit = tierData?.usage.plansLimit;
   const plansUsed = tierData ? tierData.usage.plansThisMonth : 0;
@@ -296,7 +297,7 @@ export default function NewPlanPage() {
           {!useCopy && (
             <div>
               <p className="text-sm font-medium text-text-secondary mb-2">
-                Just type{isProPlus && speechSupported ? " or speak" : ""}, no formatting needed
+                Just type{isPaidUser && speechSupported ? " or speak" : ""}, no formatting needed
               </p>
               <div className="relative">
                 <Textarea
@@ -308,7 +309,7 @@ export default function NewPlanPage() {
                   required={!useCopy}
                   readOnly={isListening}
                 />
-                {isProPlus && speechSupported && (
+                {isPaidUser && speechSupported && (
                   <button
                     type="button"
                     onClick={isListening ? stopListening : startListening}

@@ -102,11 +102,13 @@ export async function canCreateAdditionalPlan(userId: string): Promise<{
   message?: string;
 }> {
   const tier = await getUserTier(userId);
-  const activeCount = await getActiveWeekPlanCount(userId);
 
+  // Pro Plus can have unlimited active plans — skip the Firestore query
   if (canHaveMultipleActivePlans(tier)) {
-    return { allowed: true, activeCount };
+    return { allowed: true, activeCount: 0 };
   }
+
+  const activeCount = await getActiveWeekPlanCount(userId);
 
   if (activeCount >= 1) {
     return {

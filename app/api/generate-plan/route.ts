@@ -15,13 +15,11 @@ export const maxDuration = 60;
 const generationLocks = new Set<string>();
 
 export async function POST(req: NextRequest) {
-  let step = "init";
   try {
     // Allow both authenticated and anonymous users to generate plans
     // Only authenticated users can save them
     let auth: { userId: string; isAnon: boolean };
     try {
-      step = "auth";
       auth = await getAuthOrAnon();
     } catch {
       // No session - create temporary anonymous ID for generation only
@@ -57,7 +55,6 @@ export async function POST(req: NextRequest) {
 
     if (!auth.isAnon) {
       // Check plan creation limit
-      step = "canCreatePlan";
       planCheck = await canCreatePlan(auth.userId);
       if (!planCheck.allowed) {
         return NextResponse.json(
@@ -67,7 +64,6 @@ export async function POST(req: NextRequest) {
       }
 
       // Check active plan limit for this week
-      step = "canCreateAdditionalPlan";
       const activePlanCheck = await canCreateAdditionalPlan(auth.userId);
       if (!activePlanCheck.allowed) {
         return NextResponse.json(
@@ -77,7 +73,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    step = "parseBody";
     const body = await req.json();
     const { dump, mode, time_available, energy_level, focus_area, copyFromPlanId, label } = body;
 
@@ -200,7 +195,6 @@ export async function POST(req: NextRequest) {
     let userLearnings = null;
     if (!auth.isAnon) {
       try {
-        step = "learnings";
         const userRecord = await getUser(auth.userId);
         if (userRecord?.learnEnabled !== false) {
           userLearnings = await generateLearningSummary(auth.userId);
@@ -212,7 +206,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Run the three-call pipeline: Parse → Score → Generate
-    step = "llm";
     const { parsed, scored, plan } = await generateFullPlan(dump, constraints, planMode, userLearnings);
 
     if (!parsed.tasks || parsed.tasks.length === 0) {
@@ -319,7 +312,6 @@ export async function POST(req: NextRequest) {
     weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
 
     // Re-check plan limit right before saving (closes race window from LLM delay)
-    step = "recheck-plan";
     const recheck = await canCreatePlan(auth.userId);
     if (!recheck.allowed) {
       return NextResponse.json(
@@ -329,7 +321,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Re-check active plan limit (another tab could have created a plan during LLM call)
-    step = "recheck-active";
     const activeRecheck = await canCreateAdditionalPlan(auth.userId);
     if (!activeRecheck.allowed) {
       return NextResponse.json(
@@ -379,7 +370,6 @@ export async function POST(req: NextRequest) {
     ];
 
     // Save plan to Firestore (batched write: plan doc + all task docs)
-    step = "savePlan";
     const planId = await createPlanWithTasks({
       userId: auth.userId,
       mode: planMode,
@@ -406,7 +396,6 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const err = e as Error & { status?: number; error?: { type?: string } };
     console.error("Plan generation error:", {
-      step,
       message: err.message,
       name: err.name,
       status: err.status,
@@ -452,7 +441,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: `Something went wrong generating your plan. Please try again. [${step}]` },
+      { error: "Something went wrong generating your plan. Please try again." },
       { status: 500 }
     );
   }

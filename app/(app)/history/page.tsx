@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Lock, Zap, Target, Calendar } from "lucide-react";
+import { Lock, Zap, Target, Calendar, Mic } from "lucide-react";
 import Button from "@/components/ui/Button";
-import ProgressBar from "@/components/ui/ProgressBar";
 import StatsCard from "@/components/ui/StatsCard";
 import { useAuth } from "@/lib/useAuth";
 
@@ -93,24 +92,31 @@ export default function HistoryPage() {
           </h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
+              <Zap size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Serious about execution</p>
+                <p className="text-xs text-text-secondary">8 plans per month for people who plan to follow through</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
               <Calendar size={18} className="text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text">Full plan history</p>
-                <p className="text-xs text-text-secondary">See every plan you&apos;ve created and your completion stats</p>
+                <p className="text-sm font-medium text-text">Build planning momentum</p>
+                <p className="text-xs text-text-secondary">Recurring weekly templates so your rhythm never breaks</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Target size={18} className="text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text">Smart insights</p>
-                <p className="text-xs text-text-secondary">AI learns your patterns and improves future plans</p>
+                <p className="text-sm font-medium text-text">Protect your deep work</p>
+                <p className="text-xs text-text-secondary">Built-in Focus Mode to guard your concentration</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Zap size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <Mic size={18} className="text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text">Unlimited plans</p>
-                <p className="text-xs text-text-secondary">Create as many plans as you need each month</p>
+                <p className="text-sm font-medium text-text">Voice-to-plan</p>
+                <p className="text-xs text-text-secondary">Capture your thoughts in seconds, no typing needed</p>
               </div>
             </div>
           </div>
@@ -155,24 +161,31 @@ export default function HistoryPage() {
           </h3>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
+              <Zap size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-text">Serious about execution</p>
+                <p className="text-xs text-text-secondary">8 plans per month for people who plan to follow through</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
               <Calendar size={18} className="text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text">Full plan history</p>
-                <p className="text-xs text-text-secondary">See every plan you&apos;ve created and your completion stats</p>
+                <p className="text-sm font-medium text-text">Build planning momentum</p>
+                <p className="text-xs text-text-secondary">Recurring weekly templates so your rhythm never breaks</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Target size={18} className="text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text">Smart insights</p>
-                <p className="text-xs text-text-secondary">AI learns your patterns and improves future plans</p>
+                <p className="text-sm font-medium text-text">Protect your deep work</p>
+                <p className="text-xs text-text-secondary">Built-in Focus Mode to guard your concentration</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Zap size={18} className="text-primary mt-0.5 flex-shrink-0" />
+              <Mic size={18} className="text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-text">Unlimited plans</p>
-                <p className="text-xs text-text-secondary">Create as many plans as you need each month</p>
+                <p className="text-sm font-medium text-text">Voice-to-plan</p>
+                <p className="text-xs text-text-secondary">Capture your thoughts in seconds, no typing needed</p>
               </div>
             </div>
           </div>
@@ -255,25 +268,23 @@ export default function HistoryPage() {
         <div className="space-y-3">
           {plans.map((plan) => {
             const weekStart = new Date(plan.weekStart);
+            const pct = plan.totalTasks > 0
+              ? Math.round((plan.completedTasks / plan.totalTasks) * 100)
+              : 0;
             return (
               <Link
                 key={plan.id}
                 href={`/plan/${plan.id}/progress`}
                 className="block bg-bg-card rounded-lg shadow-card p-4 hover:shadow-sm transition-all"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="font-medium text-text text-sm">
-                      {plan.label ||
-                        `Week of ${weekStart.toLocaleDateString("en-GB", {
-                          month: "short",
-                          day: "numeric",
-                        })}`}
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      {plan.completedTasks}/{plan.totalTasks} tasks completed
-                    </p>
-                  </div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-semibold text-text font-display">
+                    {plan.label ||
+                      `Week of ${weekStart.toLocaleDateString("en-GB", {
+                        month: "short",
+                        day: "numeric",
+                      })}`}
+                  </p>
                   <span
                     className={`text-sm font-semibold ${
                       plan.completionRate >= 80
@@ -286,10 +297,16 @@ export default function HistoryPage() {
                     {plan.completionRate}%
                   </span>
                 </div>
-                <ProgressBar
-                  done={plan.completedTasks}
-                  total={plan.totalTasks}
-                />
+                <p className="text-xs text-text-secondary mb-3">
+                  {plan.completedTasks} of {plan.totalTasks} done
+                  {plan.status === "review" && " · Ready for review"}
+                </p>
+                <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
               </Link>
             );
           })}

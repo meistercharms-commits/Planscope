@@ -639,9 +639,10 @@ export default function SettingsPage() {
                 tier="free"
                 current={tierInfo?.tier === "free"}
                 features={[
+                  "Start planning without commitment",
                   "4 plans per month",
-                  "7-item focus cap",
-                  "Tweak, mark done, park list",
+                  "Full access to AI planning",
+                  "Permission to say no to overwhelm",
                 ]}
                 onSelect={handleManageBilling}
                 loading={tierLoading}
@@ -654,11 +655,10 @@ export default function SettingsPage() {
                 tier="pro"
                 current={tierInfo?.tier === "pro"}
                 features={[
-                  "8 plans per month",
-                  "Plan history & completion rates",
-                  "Recurring weeks (template mode)",
-                  "Focus Mode timer",
-                  "7-item focus cap",
+                  "8 plans per month for people serious about execution",
+                  "Build planning momentum with recurring weekly templates",
+                  "Protect your deep work with built-in Focus Mode",
+                  "Capture your thoughts in seconds with voice-to-plan",
                 ]}
                 onSelect={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || "price_1T593x4kVPZipsrTEGYfEPYp")}
                 loading={tierLoading}
@@ -673,15 +673,13 @@ export default function SettingsPage() {
                 tier="pro_plus"
                 current={tierInfo?.tier === "pro_plus"}
                 features={[
-                  "Unlimited plans",
-                  "Multiple active plans per week",
-                  "Plan history & completion rates",
-                  "Recurring weeks (template mode)",
-                  "Focus Mode timer",
+                  "Plan everything, unlimited possibilities",
+                  "Sync across work, personal, side projects",
+                  "Spot patterns and bottlenecks fast with full plan history and completion data",
+                  "For people juggling it all",
                 ]}
                 comingSoon={[
-                  "Team plans (up to 3 people)",
-                  "Voice input for brain dumps",
+                  "Team plans \u2014 Turn solo planning into a shared workflow with up to 3 people",
                 ]}
                 onSelect={() =>
                   handleUpgrade(

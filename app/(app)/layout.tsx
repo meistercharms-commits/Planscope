@@ -160,6 +160,8 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="relative">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
               className="p-2 text-text-secondary hover:text-text hover:bg-bg-subtle rounded-md transition-colors cursor-pointer"
             >
               {menuOpen ? <X size={20} /> : <Menu size={20} />}

@@ -742,7 +742,7 @@ export default function SettingsPage() {
                     }
                   }}
                   disabled={learnLoading || !learnFetched}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                     learnEnabled && learnFetched ? "bg-primary" : "bg-border"
                   } ${learnLoading || !learnFetched ? "opacity-50" : ""}`}
                 >
@@ -1052,7 +1052,7 @@ function NotifToggleRow({
           aria-checked={enabled}
           onClick={() => onToggle(!enabled)}
           disabled={loading}
-          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
             enabled ? "bg-primary" : "bg-border"
           } ${loading ? "opacity-50" : ""}`}
         >

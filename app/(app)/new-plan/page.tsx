@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Spinner from "@/components/ui/Spinner";
-import { Mic, MicOff, UserPlus } from "lucide-react";
+import { Mic, MicOff, UserPlus, ChevronDown, ChevronRight, Bookmark } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { Tier } from "@/types";
 import { schedulePlanReady, triggerUpgradeNotice } from "@/lib/notifications";
@@ -26,6 +26,12 @@ interface LastPlanData {
   id: string;
   weekStart: string;
   label: string | null;
+}
+
+interface ParkedTask {
+  id: string;
+  title: string;
+  category: string;
 }
 
 export default function NewPlanPage() {
@@ -51,6 +57,11 @@ export default function NewPlanPage() {
 
   // Active plan check
   const [activePlan, setActivePlan] = useState<{ id: string; status: string } | null>(null);
+
+  // Carry-over parked tasks
+  const [parkedTasks, setParkedTasks] = useState<ParkedTask[]>([]);
+  const [selectedParked, setSelectedParked] = useState<Set<string>>(new Set());
+  const [carryOverOpen, setCarryOverOpen] = useState(false);
 
   // Voice input (Pro Plus)
   const {
@@ -95,6 +106,14 @@ export default function NewPlanPage() {
         if (plans && plans.length > 0) setLastPlan(plans[0]);
       })
       .catch((err) => console.error("[NewPlan] History fetch failed:", err));
+
+    // Fetch parked tasks from last plan (signed-in users only)
+    fetch("/api/plans/parked-tasks")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.tasks?.length > 0) setParkedTasks(data.tasks);
+      })
+      .catch((err) => console.error("[NewPlan] Parked tasks fetch failed:", err));
   }, []);
 
   const canUseCopy = lastPlan && (tierData?.tier === "pro" || tierData?.tier === "pro_plus");
@@ -114,11 +133,21 @@ export default function NewPlanPage() {
     const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
 
     try {
+      // Append selected parked tasks to the dump
+      let finalDump = useCopy ? "[Copied from previous plan]" : dump;
+      if (selectedParked.size > 0 && !useCopy) {
+        const carried = parkedTasks
+          .filter((t) => selectedParked.has(t.id))
+          .map((t) => t.title)
+          .join(". ");
+        finalDump = finalDump + "\n\nCarried over from last plan: " + carried + ".";
+      }
+
       const res = await fetch("/api/generate-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dump: useCopy ? "[Copied from previous plan]" : dump,
+          dump: finalDump,
           mode,
           time_available: timeAvailable,
           energy_level: energyLevel,
@@ -295,6 +324,81 @@ export default function NewPlanPage() {
             </div>
           )}
 
+          {/* Carry over parked tasks */}
+          {parkedTasks.length > 0 && !useCopy && (
+            <div className="bg-bg-card rounded-lg border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCarryOverOpen(!carryOverOpen)}
+                aria-expanded={carryOverOpen}
+                aria-controls="carry-over-panel"
+                className="w-full flex items-center gap-3 p-4 text-left cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <Bookmark size={16} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text">
+                    Carry over from last plan
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {parkedTasks.length} parked {parkedTasks.length === 1 ? "task" : "tasks"} from last time
+                  </p>
+                </div>
+                {selectedParked.size > 0 && (
+                  <span className="text-xs font-medium text-primary bg-primary-light px-2 py-0.5 rounded-full">
+                    {selectedParked.size} selected
+                  </span>
+                )}
+                {carryOverOpen ? (
+                  <ChevronDown size={18} className="text-text-secondary flex-shrink-0" />
+                ) : (
+                  <ChevronRight size={18} className="text-text-secondary flex-shrink-0" />
+                )}
+              </button>
+              {carryOverOpen && (
+                <div id="carry-over-panel" role="region" className="px-4 pb-4 space-y-2">
+                  {parkedTasks.length >= 3 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedParked.size === parkedTasks.length) {
+                          setSelectedParked(new Set());
+                        } else {
+                          setSelectedParked(new Set(parkedTasks.map((t) => t.id)));
+                        }
+                      }}
+                      className="text-xs font-medium text-primary hover:underline cursor-pointer mb-1"
+                    >
+                      {selectedParked.size === parkedTasks.length ? "Deselect all" : "Select all"}
+                    </button>
+                  )}
+                  {parkedTasks.map((task) => (
+                    <label key={task.id} className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedParked.has(task.id)}
+                        onChange={() => {
+                          setSelectedParked((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(task.id)) {
+                              next.delete(task.id);
+                            } else {
+                              next.add(task.id);
+                            }
+                            return next;
+                          });
+                        }}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary mt-0.5"
+                      />
+                      <span className="text-sm text-text">{task.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Brain Dump */}
           {!useCopy && (
             <div>
@@ -401,7 +505,7 @@ export default function NewPlanPage() {
             type="submit"
             fullWidth
             size="lg"
-            disabled={(!useCopy && dump.length < 20) || !timeAvailable || !energyLevel || !focusArea}
+            disabled={(!useCopy && dump.length < 20 && selectedParked.size === 0) || !timeAvailable || !energyLevel || !focusArea}
           >
             {useCopy ? "Copy & make my plan" : "Make me a plan"}
           </Button>

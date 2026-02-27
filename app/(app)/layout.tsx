@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
+import { auth as firebaseAuth } from "@/lib/firebase";
 import { LogOut, Plus, Menu, X, User, Settings, Calendar, LayoutDashboard, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -23,10 +24,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     async function saveUnsavedPreview() {
       try {
+        const currentUser = firebaseAuth.currentUser;
+        if (!currentUser) return;
+
+        const idToken = await currentUser.getIdToken();
         const preview = JSON.parse(stored!);
         const res = await fetch("/api/plans/save-preview", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
           body: JSON.stringify({ preview }),
         });
         if (res.ok) {

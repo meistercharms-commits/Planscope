@@ -126,10 +126,21 @@ export function useAuth() {
       const stored = sessionStorage.getItem("planscope_preview");
       if (!stored) return null;
 
+      // Get ID token directly — bypasses session cookie timing issues entirely
+      const currentUser = firebaseAuth.currentUser;
+      if (!currentUser) {
+        console.error("[Auth] Save preview: no Firebase user");
+        return null;
+      }
+      const idToken = await currentUser.getIdToken();
+
       const preview = JSON.parse(stored);
       const res = await fetch("/api/plans/save-preview", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
         body: JSON.stringify({ preview }),
       });
 

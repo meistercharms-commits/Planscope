@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminAuth } from "@/lib/firebase-admin";
 import { getAuthOrAnon } from "@/lib/auth";
 import { createPlanWithTasks } from "@/lib/firestore";
 import { canCreatePlan, canCreateAdditionalPlan } from "@/lib/tiers";
@@ -6,19 +7,45 @@ import { canCreatePlan, canCreateAdditionalPlan } from "@/lib/tiers";
 /**
  * POST /api/plans/save-preview
  * Saves an anonymous preview plan to Firestore after the user signs up / logs in.
+ *
+ * Supports two auth methods:
+ * 1. Authorization: Bearer <idToken> — used during login flow (avoids session cookie timing)
+ * 2. Session cookie — standard fallback
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await getAuthOrAnon();
-    if (auth.isAnon) {
-      return NextResponse.json(
-        { error: "Login required to save plans" },
-        { status: 401 }
-      );
+    // Resolve user ID — prefer direct token auth to avoid session cookie race conditions
+    let userId: string;
+
+    const authHeader = req.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const idToken = authHeader.slice(7);
+      const decoded = await adminAuth.verifyIdToken(idToken, true);
+
+      // Reject anonymous users
+      const userRecord = await adminAuth.getUser(decoded.uid);
+      if (userRecord.providerData.length === 0 && !userRecord.email) {
+        return NextResponse.json(
+          { error: "Login required to save plans" },
+          { status: 401 }
+        );
+      }
+
+      userId = decoded.uid;
+    } else {
+      // Fallback to session cookie
+      const auth = await getAuthOrAnon();
+      if (auth.isAnon) {
+        return NextResponse.json(
+          { error: "Login required to save plans" },
+          { status: 401 }
+        );
+      }
+      userId = auth.userId;
     }
 
     // Enforce tier limits (same as generate-plan)
-    const planCheck = await canCreatePlan(auth.userId);
+    const planCheck = await canCreatePlan(userId);
     if (!planCheck.allowed) {
       return NextResponse.json(
         { error: planCheck.message || "Plan limit reached", code: "PLAN_LIMIT_REACHED" },
@@ -26,7 +53,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const activePlanCheck = await canCreateAdditionalPlan(auth.userId);
+    const activePlanCheck = await canCreateAdditionalPlan(userId);
     if (!activePlanCheck.allowed) {
       return NextResponse.json(
         { error: activePlanCheck.message, code: "ACTIVE_PLAN_LIMIT" },
@@ -107,7 +134,7 @@ export async function POST(req: NextRequest) {
       : "";
 
     const planId = await createPlanWithTasks({
-      userId: auth.userId,
+      userId,
       mode,
       label: null,
       weekStart,

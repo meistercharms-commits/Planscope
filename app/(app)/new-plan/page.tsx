@@ -127,6 +127,10 @@ export default function NewPlanPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!timeAvailable || !energyLevel || !focusArea) {
+      setAttempted(true);
+      return;
+    }
     if (loading) return; // Guard against double-submit
     setError("");
     setLoading(true);
@@ -524,8 +528,7 @@ export default function NewPlanPage() {
               type="submit"
               fullWidth
               size="lg"
-              disabled={(!useCopy && dump.length < 20 && selectedParked.size === 0) || !timeAvailable || !energyLevel || !focusArea}
-              onClick={() => setAttempted(true)}
+              disabled={!useCopy && dump.length < 20 && selectedParked.size === 0}
             >
               {useCopy ? "Copy & make my plan" : "Make me a plan"}
             </Button>

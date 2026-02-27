@@ -50,7 +50,8 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [showPasswords, setShowPasswords] = useState(false);
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [showChangePasswords, setShowChangePasswords] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
   // Export
@@ -495,7 +496,7 @@ export default function SettingsPage() {
                         <div className="relative">
                           <Input
                             label="Current password"
-                            type={showPasswords ? "text" : "password"}
+                            type={showEmailPassword ? "text" : "password"}
                             placeholder="Confirm your password"
                             value={emailPassword}
                             onChange={(e) => setEmailPassword(e.target.value)}
@@ -504,11 +505,11 @@ export default function SettingsPage() {
                           {emailPassword.length > 0 && (
                             <button
                               type="button"
-                              onClick={() => setShowPasswords(!showPasswords)}
+                              onClick={() => setShowEmailPassword(!showEmailPassword)}
                               className="absolute right-3 top-[38px] text-text-tertiary hover:text-text-secondary transition-colors"
-                              aria-label={showPasswords ? "Hide password" : "Show password"}
+                              aria-label={showEmailPassword ? "Hide password" : "Show password"}
                             >
-                              {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+                              {showEmailPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                           )}
                         </div>
@@ -555,7 +556,7 @@ export default function SettingsPage() {
                         <div className="relative">
                           <Input
                             label="Current password"
-                            type={showPasswords ? "text" : "password"}
+                            type={showChangePasswords ? "text" : "password"}
                             placeholder="Your current password"
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -564,17 +565,17 @@ export default function SettingsPage() {
                           {currentPassword.length > 0 && (
                             <button
                               type="button"
-                              onClick={() => setShowPasswords(!showPasswords)}
+                              onClick={() => setShowChangePasswords(!showChangePasswords)}
                               className="absolute right-3 top-[38px] text-text-tertiary hover:text-text-secondary transition-colors"
-                              aria-label={showPasswords ? "Hide password" : "Show password"}
+                              aria-label={showChangePasswords ? "Hide password" : "Show password"}
                             >
-                              {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+                              {showChangePasswords ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                           )}
                         </div>
                         <Input
                           label="New password"
-                          type={showPasswords ? "text" : "password"}
+                          type={showChangePasswords ? "text" : "password"}
                           placeholder="At least 6 characters"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -583,7 +584,7 @@ export default function SettingsPage() {
                         />
                         <Input
                           label="Confirm new password"
-                          type={showPasswords ? "text" : "password"}
+                          type={showChangePasswords ? "text" : "password"}
                           placeholder="Type it again"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}

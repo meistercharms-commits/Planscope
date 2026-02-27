@@ -81,7 +81,7 @@ export function FocusTimerProvider({ children }: { children: React.ReactNode }) 
     const stored = loadFromStorage();
     if (stored) {
       const remaining = computeTimeLeft(stored);
-      if (remaining <= 0 && !stored.pausedAt) {
+      if (remaining <= 0) {
         // Timer already expired — clear it
         saveToStorage(null);
       } else {

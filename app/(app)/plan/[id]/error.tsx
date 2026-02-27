@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+
 export default function PlanError({
   reset,
 }: {
@@ -9,7 +11,7 @@ export default function PlanError({
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
       <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center mb-6">
-        <span className="text-2xl">⚠️</span>
+        <AlertTriangle size={28} className="text-primary" />
       </div>
       <h1 className="text-xl font-bold text-text font-display mb-2">
         Something went wrong

@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 export default function RootNotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-bg">
       <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center mb-6">
-        <span className="text-2xl">🔍</span>
+        <Search size={28} className="text-primary" />
       </div>
       <h1 className="text-xl font-bold text-text font-display mb-2">
         Page not found

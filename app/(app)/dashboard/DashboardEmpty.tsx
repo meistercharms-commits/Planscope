@@ -20,7 +20,7 @@ export default function DashboardEmpty() {
           No plans yet this week
         </h2>
         <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto">
-          Dump everything on your mind and we&apos;ll turn it into a realistic
+          Pour out everything on your mind and we&apos;ll turn it into a realistic
           plan you can actually complete.
         </p>
         <Link

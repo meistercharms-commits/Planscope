@@ -243,7 +243,7 @@ export default function HistoryPage() {
             No plans yet
           </h2>
           <p className="text-sm text-text-secondary mb-6 max-w-sm mx-auto">
-            Start by creating your first plan. Dump everything on your mind, and we'll help you turn it into a realistic plan you can actually complete.
+            Start by creating your first plan. Write down everything on your mind, and we'll help you turn it into a realistic plan you can actually complete.
           </p>
           <Link href="/new-plan">
             <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition-colors">

@@ -7,7 +7,8 @@ import Button from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import Spinner from "@/components/ui/Spinner";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, UserPlus } from "lucide-react";
+import { useAuth } from "@/lib/useAuth";
 import { Tier } from "@/types";
 import { schedulePlanReady, triggerUpgradeNotice } from "@/lib/notifications";
 import { useSpeechToText } from "@/lib/useSpeechToText";
@@ -29,6 +30,7 @@ interface LastPlanData {
 
 export default function NewPlanPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [dump, setDump] = useState("");
   const [mode, setMode] = useState("week");
   const [timeAvailable, setTimeAvailable] = useState("");
@@ -404,6 +406,38 @@ export default function NewPlanPage() {
             {useCopy ? "Copy & make my plan" : "Make me a plan"}
           </Button>
         </form>
+
+        {/* Sign-up nudge for anonymous users */}
+        {!authLoading && !user && (
+          <div className="mt-6 bg-bg-card rounded-lg border border-border p-5 text-center">
+            <div
+              className="rounded-full bg-primary-light inline-flex items-center justify-center mb-3"
+              style={{ width: 40, height: 40 }}
+            >
+              <UserPlus size={20} className="text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-text font-display mb-1">
+              You&apos;ll need an account to save your plan
+            </p>
+            <p className="text-xs text-text-secondary mb-4 max-w-sm mx-auto leading-relaxed">
+              You can create a plan to preview it, but sign up or log in to keep it and track your progress.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link
+                href="/signup"
+                className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+              >
+                Sign up free
+              </Link>
+              <Link
+                href="/login"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Log in
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

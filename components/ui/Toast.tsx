@@ -3,14 +3,20 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { X } from "lucide-react";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   type: "success" | "warning" | "error";
+  action?: ToastAction;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: Toast["type"]) => void;
+  showToast: (message: string, type?: Toast["type"], action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextType>({ showToast: () => {} });
@@ -23,12 +29,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback(
-    (message: string, type: Toast["type"] = "success") => {
+    (message: string, type: Toast["type"] = "success", action?: ToastAction) => {
       const id = Math.random().toString(36).slice(2);
-      setToasts((prev) => [...prev, { id, message, type }]);
+      setToasts((prev) => [...prev, { id, message, type, action }]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 4000);
+      }, action ? 5000 : 4000);
     },
     []
   );
@@ -49,6 +55,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }`}
           >
             <span className="flex-1">{toast.message}</span>
+            {toast.action && (
+              <button
+                onClick={() => {
+                  toast.action!.onClick();
+                  setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+                }}
+                className="shrink-0 font-semibold underline underline-offset-2 opacity-90 hover:opacity-100 transition-opacity"
+              >
+                {toast.action.label}
+              </button>
+            )}
             <button
               onClick={() =>
                 setToasts((prev) => prev.filter((t) => t.id !== toast.id))

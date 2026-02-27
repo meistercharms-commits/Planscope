@@ -140,7 +140,10 @@ export default function PlanProgressPage({
           msg = "All done. Great work.";
         }
 
-        showToast(msg);
+        showToast(msg, "success", {
+          label: "Undo",
+          onClick: () => toggleTask(taskId, "done"),
+        });
         triggerCelebration(doneCount, totalActive).catch((err) => console.error("[Progress] Celebration failed:", err));
       }
     } catch {
@@ -631,7 +634,7 @@ function TaskProgressCard({
   dimmed?: boolean;
 }) {
   const isDone = task.status === "done";
-  const isDimmed = !isArchived && dimmed && !expanded;
+  const isDimmed = !isArchived && !isDone && dimmed && !expanded;
   const colors = getCategoryColors(task.category);
   const [hovered, setHovered] = useState(false);
   const [popKey, setPopKey] = useState(0);

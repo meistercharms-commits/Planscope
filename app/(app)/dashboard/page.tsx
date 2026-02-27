@@ -17,7 +17,14 @@ export default async function DashboardPage() {
 
   const tier = await getUserTier(auth.userId);
 
-  const activePlans = await getActivePlans(auth.userId);
+  let activePlans;
+  try {
+    activePlans = await getActivePlans(auth.userId);
+  } catch (e) {
+    // Firestore index may still be building — show empty state
+    console.error("Dashboard: failed to fetch active plans:", (e as Error).message);
+    return <DashboardEmpty />;
+  }
 
   // No active plans: show empty state with CTA
   if (activePlans.length === 0) return <DashboardEmpty />;

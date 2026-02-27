@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, rateLimit } from "@/lib/auth";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUser, getUserByEmail, updateUser } from "@/lib/firestore";
 
@@ -10,6 +10,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Not authenticated" },
         { status: 401 }
+      );
+    }
+
+    // Rate limit: 5 attempts per hour per user
+    const allowed = rateLimit(`email:${auth.userId}`, { maxRequests: 5, windowMs: 3600000 });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many email change attempts. Please try again later." },
+        { status: 429 }
       );
     }
 

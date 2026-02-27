@@ -133,11 +133,12 @@ export default function FocusModePage({
     // Cancel the scheduled "time's up" notification since user is done early or already here
     cancelFocusTimer(taskId).catch(() => {});
     try {
-      await fetch(`/api/plans/${id}/tasks/${taskId}`, {
+      const res = await fetch(`/api/plans/${id}/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "done" }),
       });
+      if (!res.ok) throw new Error("Failed to update task");
       showToast("Task complete. Well done.");
       router.push(`/plan/${id}/progress`);
     } catch {

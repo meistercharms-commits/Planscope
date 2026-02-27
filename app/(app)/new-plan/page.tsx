@@ -81,8 +81,12 @@ export default function NewPlanPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return; // Guard against double-submit
     setError("");
     setLoading(true);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout
 
     try {
       const res = await fetch("/api/generate-plan", {
@@ -97,7 +101,10 @@ export default function NewPlanPage() {
           ...(useCopy && lastPlan ? { copyFromPlanId: lastPlan.id } : {}),
           ...(planLabel ? { label: planLabel } : {}),
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const data = await res.json();
@@ -112,12 +119,26 @@ export default function NewPlanPage() {
         throw new Error(data.error || "Failed to generate plan");
       }
 
-      const { id, taskCount } = await res.json();
+      const data = await res.json();
+
+      // Anonymous users: plan generated but not saved — show preview
+      if (data.requiresLogin && data.preview) {
+        sessionStorage.setItem("planscope_preview", JSON.stringify(data.preview));
+        router.push("/plan/preview");
+        return;
+      }
+
+      const { id, taskCount } = data;
       // Schedule "plan ready" notification (fires 5 min from now if user leaves app)
       schedulePlanReady(id, taskCount ?? 7).catch(() => {});
       router.push(`/plan/${id}`);
     } catch (err) {
-      setError((err as Error).message);
+      clearTimeout(timeoutId);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Plan generation timed out. Please try again.");
+      } else {
+        setError((err as Error).message);
+      }
       setLoading(false);
     }
   }

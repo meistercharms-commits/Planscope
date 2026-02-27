@@ -106,6 +106,13 @@ export async function POST(req: Request) {
       allow_promotion_codes: true,
     });
 
+    if (!session.url) {
+      return NextResponse.json(
+        { error: "Failed to create checkout session" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       checkoutUrl: session.url,
     });

@@ -28,6 +28,10 @@ function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
     : subDetails.subscription.id;
 }
 
+// Simple in-memory set to detect duplicate webhook deliveries (same serverless instance)
+const processedEvents = new Set<string>();
+const MAX_PROCESSED_EVENTS = 500;
+
 /**
  * POST /api/webhooks/stripe
  *
@@ -56,11 +60,19 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   // 1. Verify webhook signature (CRITICAL for security)
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("Webhook: STRIPE_WEBHOOK_SECRET not configured");
+    return NextResponse.json(
+      { error: "Server misconfigured" },
+      { status: 500 }
+    );
+  }
+
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -71,7 +83,19 @@ export async function POST(req: Request) {
     );
   }
 
-  // 2. Process event
+  // 2. Check for duplicate delivery (same serverless instance)
+  if (processedEvents.has(event.id)) {
+    console.log(`Webhook: Duplicate event ${event.id} (${event.type}), skipping`);
+    return NextResponse.json({ received: true });
+  }
+  processedEvents.add(event.id);
+  // Prevent unbounded growth
+  if (processedEvents.size > MAX_PROCESSED_EVENTS) {
+    const firstKey = processedEvents.values().next().value;
+    if (firstKey) processedEvents.delete(firstKey);
+  }
+
+  // 3. Process event
   try {
     switch (event.type) {
       case "customer.subscription.created":

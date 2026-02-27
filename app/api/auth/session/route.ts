@@ -26,8 +26,10 @@ export async function POST(req: NextRequest) {
     // Only create session cookies for recently signed-in users
     const signInAge = Date.now() / 1000 - decoded.auth_time;
     if (signInAge > 5 * 60) {
-      // Token is older than 5 minutes — client should get a fresh one
-      // Allow it anyway for token refresh flow, but verify it's valid
+      return NextResponse.json(
+        { error: "Token is too old. Please sign in again." },
+        { status: 401 }
+      );
     }
 
     // Create the secure session cookie
@@ -57,7 +59,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[Session] Error creating session:", error);
+    const err = error as Error;
+    console.error("[Session] Error creating session:", err.message);
     return NextResponse.json(
       { error: "Failed to create session" },
       { status: 401 }

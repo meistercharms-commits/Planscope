@@ -1,16 +1,13 @@
-import { getRecentPlansWithTasks } from "@/lib/firestore";
+import { getRecentPlansWithTasks, type PlanWithTasks } from "@/lib/firestore";
 import type { LearningsSummary, PlanLearning } from "@/types";
 
 /**
- * Extract per-plan learning metrics from completed/active plans.
- * Analyses the last 1-4 plans for the user.
+ * Extract per-plan learning metrics from pre-fetched plans.
+ * Pure function — no Firestore calls.
  */
-export async function extractPlanLearnings(
-  userId: string
-): Promise<PlanLearning[]> {
-  // Batch-fetch plans with their tasks in one go (avoids N+1 queries)
-  const plans = await getRecentPlansWithTasks(userId, 4);
-
+export function extractPlanLearnings(
+  plans: PlanWithTasks[]
+): PlanLearning[] {
   return plans.map((plan) => {
     const activeTasks = plan.tasks.filter(
       (t) => t.section === "do_first" || t.section === "this_week"
@@ -78,11 +75,14 @@ export async function extractPlanLearnings(
 /**
  * Generate a high-level summary from plan learnings
  * for the LLM and UI display.
+ * Fetches plans once and reuses for both learnings extraction and recurring issue detection.
  */
 export async function generateLearningSummary(
   userId: string
 ): Promise<LearningsSummary | null> {
-  const learnings = await extractPlanLearnings(userId);
+  // Single Firestore fetch — reused for both learnings and recurring issues
+  const plans = await getRecentPlansWithTasks(userId, 4);
+  const learnings = extractPlanLearnings(plans);
 
   // Need at least 2 plans for meaningful patterns
   if (learnings.length < 2) {
@@ -137,8 +137,7 @@ export async function generateLearningSummary(
     avgPlanned >= 5 && avgCompleted / avgPlanned < 0.6;
 
   // Recurring issues: find task titles that appear in 2+ plans with low completion
-  // Plans already include tasks from the batch-fetch — no extra queries needed
-  const plans = await getRecentPlansWithTasks(userId, 4);
+  // Reuse the same plans fetched above — no extra Firestore query
   const taskAppearances: Record<
     string,
     { count: number; completed: number }

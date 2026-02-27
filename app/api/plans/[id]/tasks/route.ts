@@ -17,8 +17,20 @@ export async function POST(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
-    // Enforce 7-item cap for active sections
+    // Validate title
+    if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+    if (body.title.length > 500) {
+      return NextResponse.json({ error: "Title must be under 500 characters" }, { status: 400 });
+    }
+
+    // Validate section
+    const validSections = ["do_first", "this_week", "not_this_week"];
     const targetSection = body.section || "this_week";
+    if (!validSections.includes(targetSection)) {
+      return NextResponse.json({ error: "Invalid section" }, { status: 400 });
+    }
     if (targetSection !== "not_this_week") {
       const capCheck = await canAddActiveTask(id);
       if (!capCheck.allowed) {
@@ -30,6 +42,13 @@ export async function POST(
     }
 
     const maxOrder = Math.max(0, ...plan.tasks.map((t) => t.sortOrder));
+
+    // Validate optional timeEstimate
+    if (body.timeEstimate !== undefined && body.timeEstimate !== null) {
+      if (typeof body.timeEstimate !== "string" || body.timeEstimate.length > 100) {
+        return NextResponse.json({ error: "Invalid time estimate" }, { status: 400 });
+      }
+    }
 
     const task = await createTask(id, {
       title: body.title,

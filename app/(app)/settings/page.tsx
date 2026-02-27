@@ -192,10 +192,10 @@ export default function SettingsPage() {
       const updated = await res.json();
       setNotifPrefs(updated);
 
-      // Handle daily check-in scheduling
+      // Handle daily check-in scheduling — use `updated` to avoid stale closure
       if (key === "dailyCheckin") {
         if (value) {
-          await scheduleDailyCheckin(notifPrefs.dailyCheckinTime);
+          await scheduleDailyCheckin(updated.dailyCheckinTime);
         } else {
           await cancelDailyCheckin();
         }
@@ -235,7 +235,7 @@ export default function SettingsPage() {
       const updated = await res.json();
       setNotifPrefs(updated);
 
-      if (notifPrefs.dailyCheckin) {
+      if (updated.dailyCheckin) {
         await scheduleDailyCheckin(time);
       }
     } catch {

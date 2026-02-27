@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { getAuthOrAnon } from "@/lib/auth";
 import { generateFullPlan } from "@/lib/llm";
 import { getUser, getPlan, createPlanWithTasks } from "@/lib/firestore";
@@ -6,6 +7,12 @@ import { rateLimit } from "@/lib/rate-limit";
 import { canCreatePlan, canCreateAdditionalPlan, getUserTier, canUseRecurring } from "@/lib/tiers";
 import { PlanMeta } from "@/types";
 import { generateLearningSummary } from "@/lib/learnings";
+
+// Allow up to 60 seconds for this route (LLM calls take time)
+export const maxDuration = 60;
+
+// Per-user lock to prevent concurrent plan generation (closes TOCTOU race window)
+const generationLocks = new Set<string>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,24 +24,50 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const auth = await getAuthOrAnon();
-
-    // Check plan creation limit
-    const planCheck = await canCreatePlan(auth.userId);
-    if (!planCheck.allowed) {
-      return NextResponse.json(
-        { error: planCheck.message, code: "PLAN_LIMIT_REACHED" },
-        { status: 403 }
-      );
+    // Allow both authenticated and anonymous users to generate plans
+    // Only authenticated users can save them
+    let auth: { userId: string; isAnon: boolean };
+    try {
+      auth = await getAuthOrAnon();
+    } catch {
+      // No session - create temporary anonymous ID for generation only
+      // User will need to sign in to save the plan
+      const randomId = randomBytes(8).toString("hex");
+      auth = { userId: `anon-${randomId}`, isAnon: true };
     }
 
-    // Check active plan limit for this week
-    const activePlanCheck = await canCreateAdditionalPlan(auth.userId);
-    if (!activePlanCheck.allowed) {
+    // Prevent concurrent plan generation for the same user (closes TOCTOU race)
+    if (!auth.isAnon && generationLocks.has(auth.userId)) {
       return NextResponse.json(
-        { error: activePlanCheck.message, code: "ACTIVE_PLAN_LIMIT" },
-        { status: 403 }
+        { error: "A plan is already being generated. Please wait." },
+        { status: 429 }
       );
+    }
+    if (!auth.isAnon) generationLocks.add(auth.userId);
+
+    try {
+
+    // Skip tier checks for anonymous users (they can only generate, not save)
+    let planCheck: Awaited<ReturnType<typeof canCreatePlan>> = { allowed: true, remaining: Infinity, limit: Infinity };
+
+    if (!auth.isAnon) {
+      // Check plan creation limit
+      planCheck = await canCreatePlan(auth.userId);
+      if (!planCheck.allowed) {
+        return NextResponse.json(
+          { error: planCheck.message || "Plan limit reached", code: "PLAN_LIMIT_REACHED" },
+          { status: 403 }
+        );
+      }
+
+      // Check active plan limit for this week
+      const activePlanCheck = await canCreateAdditionalPlan(auth.userId);
+      if (!activePlanCheck.allowed) {
+        return NextResponse.json(
+          { error: activePlanCheck.message, code: "ACTIVE_PLAN_LIMIT" },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await req.json();
@@ -83,14 +116,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Source plan not found" }, { status: 404 });
       }
 
-      // Copy tasks directly from source plan
+      // Copy tasks directly from source plan (UTC for consistent server-side behaviour)
       const now = new Date();
-      const dayOfWeek = now.getDay();
+      const dayOfWeek = now.getUTCDay();
       const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - dayOfWeek);
-      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+      weekStart.setUTCHours(0, 0, 0, 0);
       const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+
+      // Enforce 7-item active cap: move excess this_week tasks to not_this_week
+      const doFirstTasks = sourcePlan.tasks.filter(t => t.section === "do_first");
+      const thisWeekTasks = sourcePlan.tasks.filter(t => t.section === "this_week");
+      const notThisWeekTasks = sourcePlan.tasks.filter(t => t.section === "not_this_week");
+      const maxActive = 7;
+      const activeSlots = Math.max(0, maxActive - doFirstTasks.length);
+      const cappedThisWeek = thisWeekTasks.slice(0, activeSlots);
+      const overflowToParked = thisWeekTasks.slice(activeSlots);
+
+      const cappedTasks = [
+        ...doFirstTasks.slice(0, maxActive),
+        ...cappedThisWeek,
+        ...overflowToParked.map(t => ({ ...t, section: "not_this_week" as const })),
+        ...notThisWeekTasks,
+      ];
 
       const planId = await createPlanWithTasks({
         userId: auth.userId,
@@ -103,7 +152,7 @@ export async function POST(req: NextRequest) {
         planMeta: sourcePlan.planMeta || {},
         constraints,
         status: "review",
-        tasks: sourcePlan.tasks.map((task, i) => ({
+        tasks: cappedTasks.map((task, i) => ({
           title: task.title,
           section: task.section,
           timeEstimate: task.timeEstimate || null,
@@ -139,11 +188,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has learning enabled and fetch learnings
-    const userRecord = await getUser(auth.userId);
-    const userLearnings =
-      userRecord?.learnEnabled !== false
-        ? await generateLearningSummary(auth.userId)
-        : null;
+    // Skip for anonymous users (no history to learn from)
+    let userLearnings = null;
+    if (!auth.isAnon) {
+      try {
+        const userRecord = await getUser(auth.userId);
+        if (userRecord?.learnEnabled !== false) {
+          userLearnings = await generateLearningSummary(auth.userId);
+        }
+      } catch (learningsErr) {
+        console.error("Learnings fetch failed (non-fatal):", learningsErr);
+        // Degrade gracefully — plan generation continues without learnings
+      }
+    }
 
     // Run the three-call pipeline: Parse → Score → Generate
     const { parsed, scored, plan } = await generateFullPlan(dump, constraints, planMode, userLearnings);
@@ -158,6 +215,81 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Anonymous users can generate but must log in to save
+    // Return early before any Firestore save operations
+    if (auth.isAnon) {
+      // Build the same plan structure as saved plans so the preview page can display it
+      const anonPlanMeta: PlanMeta = {
+        headline: plan.headline,
+        burnout_alert: plan.burnout_alert,
+        reality_check: plan.reality_check,
+        real_talk: plan.real_talk,
+        next_week_preview: plan.next_week_preview,
+      };
+
+      const now = new Date();
+      const dayOfWeek = now.getUTCDay();
+      const anonWeekStart = new Date(now);
+      anonWeekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+      anonWeekStart.setUTCHours(0, 0, 0, 0);
+      const anonWeekEnd = new Date(anonWeekStart);
+      anonWeekEnd.setUTCDate(anonWeekStart.getUTCDate() + 6);
+
+      const anonTasks = [
+        ...(plan.do_first || []).map((task: { title: string; time_estimate?: string; why?: string; context?: string }, i: number) => ({
+          id: `preview-${i}`,
+          title: task.title,
+          section: "do_first",
+          timeEstimate: task.time_estimate || null,
+          effort: findParsedEffort(parsed.tasks, task.title),
+          urgency: findParsedUrgency(parsed.tasks, task.title),
+          category: findParsedCategory(parsed.tasks, task.title),
+          context: [task.why, task.context].filter(Boolean).join(" | ") || null,
+          status: "pending",
+          sortOrder: i,
+        })),
+        ...(plan.this_week || []).map((task: { title: string; time_estimate?: string; category?: string; notes?: string }, i: number) => ({
+          id: `preview-${(plan.do_first?.length || 0) + i}`,
+          title: task.title,
+          section: "this_week",
+          timeEstimate: task.time_estimate || null,
+          effort: findParsedEffort(parsed.tasks, task.title),
+          urgency: findParsedUrgency(parsed.tasks, task.title),
+          category: task.category || "other",
+          context: task.notes || null,
+          status: "pending",
+          sortOrder: (plan.do_first?.length || 0) + i,
+        })),
+        ...(plan.not_this_week || []).map((task: { title: string; reason?: string; validation?: string }, i: number) => ({
+          id: `preview-${100 + i}`,
+          title: task.title,
+          section: "not_this_week",
+          timeEstimate: null,
+          effort: findParsedEffort(parsed.tasks, task.title),
+          urgency: findParsedUrgency(parsed.tasks, task.title),
+          category: findParsedCategory(parsed.tasks, task.title),
+          context: [task.reason, task.validation].filter(Boolean).join(" | ") || null,
+          status: "pending",
+          sortOrder: 100 + i,
+        })),
+      ];
+
+      return NextResponse.json({
+        id: null,
+        requiresLogin: true,
+        preview: {
+          mode: planMode,
+          weekStart: anonWeekStart.toISOString(),
+          weekEnd: anonWeekEnd.toISOString(),
+          status: "review",
+          planMeta: JSON.stringify(anonPlanMeta),
+          tasks: anonTasks,
+          originalDump: dump,
+          constraints,
+        },
+      });
+    }
+
     // Build plan metadata
     const planMeta: PlanMeta = {
       headline: plan.headline,
@@ -167,14 +299,14 @@ export async function POST(req: NextRequest) {
       next_week_preview: plan.next_week_preview,
     };
 
-    // Calculate week dates
+    // Calculate week dates (UTC for consistent server-side behaviour)
     const now = new Date();
-    const dayOfWeek = now.getDay();
+    const dayOfWeek = now.getUTCDay();
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - dayOfWeek);
-    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
 
     // Re-check plan limit right before saving (closes race window from LLM delay)
     const recheck = await canCreatePlan(auth.userId);
@@ -254,17 +386,54 @@ export async function POST(req: NextRequest) {
       plansRemaining: planCheck.remaining === Infinity ? null : planCheck.remaining - 1,
       plansLimit: planCheck.limit === Infinity ? null : planCheck.limit,
     });
-  } catch (e) {
-    console.error("Plan generation error:", e);
+  } finally {
+    if (!auth.isAnon) generationLocks.delete(auth.userId);
+  }
 
-    const message = (e as Error).message;
-    if (message.includes("timeout") || message.includes("ECONNREFUSED")) {
+  } catch (e) {
+    const err = e as Error & { status?: number; error?: { type?: string } };
+    console.error("Plan generation error:", {
+      message: err.message,
+      name: err.name,
+      status: err.status,
+      errorType: err.error?.type,
+      stack: err.stack?.substring(0, 500),
+    });
+
+    const message = err.message || "";
+
+    // Anthropic API key issues
+    if (message.includes("ANTHROPIC_API_KEY") || err.status === 401) {
+      return NextResponse.json(
+        { error: "AI service configuration error. Please contact support." },
+        { status: 500 }
+      );
+    }
+
+    // Rate limit from Anthropic
+    if (err.status === 429) {
+      return NextResponse.json(
+        { error: "Our AI service is busy. Please try again in a minute." },
+        { status: 429 }
+      );
+    }
+
+    // Timeout
+    if (message.includes("timeout") || message.includes("ECONNREFUSED") || message.includes("ETIMEDOUT")) {
       return NextResponse.json(
         {
           error:
             "Plan generation took a bit longer than expected. Please try again.",
         },
         { status: 408 }
+      );
+    }
+
+    // Anthropic overloaded
+    if (err.status === 529 || message.includes("overloaded")) {
+      return NextResponse.json(
+        { error: "Our AI service is temporarily overloaded. Please try again in a moment." },
+        { status: 503 }
       );
     }
 

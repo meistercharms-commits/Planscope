@@ -218,21 +218,29 @@ export async function deleteUserAndData(uid: string): Promise<void> {
     .where("userId", "==", uid)
     .get();
 
-  const batch = db.batch();
+  // Collect all refs to delete (plans + their tasks + user doc)
+  const refs: FirebaseFirestore.DocumentReference[] = [];
 
-  // 2. For each plan, delete all tasks
   for (const planDoc of plansSnap.docs) {
     const tasksSnap = await planDoc.ref.collection("tasks").get();
     for (const taskDoc of tasksSnap.docs) {
-      batch.delete(taskDoc.ref);
+      refs.push(taskDoc.ref);
     }
-    batch.delete(planDoc.ref);
+    refs.push(planDoc.ref);
   }
 
-  // 3. Delete user document
-  batch.delete(db.collection("users").doc(uid));
+  refs.push(db.collection("users").doc(uid));
 
-  await batch.commit();
+  // 2. Chunk into batches of 450 (Firestore limit is 500)
+  const BATCH_SIZE = 450;
+  for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+    const chunk = refs.slice(i, i + BATCH_SIZE);
+    const batch = db.batch();
+    for (const ref of chunk) {
+      batch.delete(ref);
+    }
+    await batch.commit();
+  }
 }
 
 // ─── Plan Operations ───
@@ -240,12 +248,12 @@ export async function deleteUserAndData(uid: string): Promise<void> {
 export async function getActivePlans(
   userId: string
 ): Promise<PlanWithTasks[]> {
-  // Get current week start (Sunday)
+  // Get current week start (Sunday) — UTC for consistent server-side behaviour
   const now = new Date();
-  const dayOfWeek = now.getDay();
+  const dayOfWeek = now.getUTCDay();
   const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+  weekStart.setUTCHours(0, 0, 0, 0);
 
   const snap = await db
     .collection("plans")
@@ -396,10 +404,10 @@ export async function getActiveWeekPlanCount(
   userId: string
 ): Promise<number> {
   const now = new Date();
-  const dayOfWeek = now.getDay();
+  const dayOfWeek = now.getUTCDay();
   const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+  weekStart.setUTCHours(0, 0, 0, 0);
 
   const snap = await db
     .collection("plans")
@@ -467,9 +475,9 @@ export async function createTask(
     section: taskData.section,
     timeEstimate: taskData.timeEstimate,
     effort: taskData.effort,
-    urgency: null,
+    urgency: taskData.urgency,
     category: taskData.category,
-    context: null,
+    context: taskData.context,
     status: taskData.status,
     sortOrder: taskData.sortOrder,
     completedAt: null,
@@ -481,13 +489,61 @@ export async function updateTask(
   planId: string,
   taskId: string,
   data: Record<string, unknown>
-): Promise<void> {
-  await db
+): Promise<Record<string, unknown> | null> {
+  const taskRef = db
     .collection("plans")
     .doc(planId)
     .collection("tasks")
-    .doc(taskId)
-    .update(data);
+    .doc(taskId);
+
+  await taskRef.update(data);
+
+  // Re-fetch and return the updated task
+  const snap = await taskRef.get();
+  if (!snap.exists) return null;
+  const taskData = snap.data()!;
+  return {
+    id: snap.id,
+    planId,
+    ...taskData,
+    completedAt: taskData.completedAt?.toDate?.() || taskData.completedAt || null,
+    createdAt: taskData.createdAt?.toDate?.() || taskData.createdAt || null,
+  };
+}
+
+/**
+ * Atomically promote a task from parked to active, enforcing the 7-item cap
+ * inside a Firestore transaction to prevent race conditions.
+ */
+export async function promoteTaskAtomic(
+  planId: string,
+  taskId: string,
+  newSection: string,
+  maxActive: number = 7
+): Promise<{ allowed: boolean; activeCount?: number; task?: Record<string, unknown> }> {
+  return db.runTransaction(async (t) => {
+    const tasksSnap = await t.get(
+      db.collection("plans").doc(planId).collection("tasks")
+    );
+    const activeCount = tasksSnap.docs.filter((d) => {
+      const s = d.data().section;
+      return s !== "not_this_week";
+    }).length;
+
+    if (activeCount >= maxActive) {
+      return { allowed: false, activeCount };
+    }
+
+    const taskRef = db.collection("plans").doc(planId).collection("tasks").doc(taskId);
+    t.update(taskRef, { section: newSection });
+
+    const taskSnap = tasksSnap.docs.find((d) => d.id === taskId);
+    const taskData = taskSnap?.data();
+    return {
+      allowed: true,
+      task: taskData ? { id: taskId, planId, ...taskData, section: newSection } : undefined,
+    };
+  });
 }
 
 export async function deleteTask(

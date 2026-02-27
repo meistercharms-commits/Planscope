@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
-import { getPlan, getTask, updateTask, deleteTask } from "@/lib/firestore";
-import { canAddActiveTask } from "@/lib/tiers";
+import { getPlan, getTask, updateTask, deleteTask, promoteTaskAtomic } from "@/lib/firestore";
 
 export async function PATCH(
   req: NextRequest,
@@ -25,16 +24,41 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Enforce 7-item cap when moving from parked to active
+    // Enforce 7-item cap atomically when promoting from parked to active
     if (body.section !== undefined && body.section !== "not_this_week") {
       if (existingTask.section === "not_this_week") {
-        const capCheck = await canAddActiveTask(id);
-        if (!capCheck.allowed) {
+        // Use transaction to prevent race condition (two tabs promoting simultaneously)
+        const result = await promoteTaskAtomic(id, taskId, body.section);
+        if (!result.allowed) {
           return NextResponse.json(
-            { error: capCheck.message, code: "PLAN_FULL", activeCount: capCheck.activeCount },
+            { error: "Your plan is full. Pick what matters.", code: "PLAN_FULL", activeCount: result.activeCount },
             { status: 403 }
           );
         }
+        // If only section was being changed, return early
+        if (Object.keys(body).length === 1) {
+          return NextResponse.json(result.task);
+        }
+        // Otherwise, continue with remaining field updates (remove section since already handled)
+        delete body.section;
+      }
+    }
+
+    // Validate fields before building update
+    const validStatuses = ["pending", "done", "skipped"];
+    if (body.status !== undefined && !validStatuses.includes(body.status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+    const validSections = ["do_first", "this_week", "not_this_week"];
+    if (body.section !== undefined && !validSections.includes(body.section)) {
+      return NextResponse.json({ error: "Invalid section" }, { status: 400 });
+    }
+    if (body.title !== undefined) {
+      if (typeof body.title !== "string" || body.title.trim().length === 0) {
+        return NextResponse.json({ error: "Title cannot be empty" }, { status: 400 });
+      }
+      if (body.title.length > 500) {
+        return NextResponse.json({ error: "Title must be under 500 characters" }, { status: 400 });
       }
     }
 
@@ -45,7 +69,12 @@ export async function PATCH(
     }
     if (body.title !== undefined) updateData.title = body.title;
     if (body.section !== undefined) updateData.section = body.section;
-    if (body.timeEstimate !== undefined) updateData.timeEstimate = body.timeEstimate;
+    if (body.timeEstimate !== undefined) {
+      if (body.timeEstimate !== null && typeof body.timeEstimate !== "string") {
+        return NextResponse.json({ error: "Invalid time estimate" }, { status: 400 });
+      }
+      updateData.timeEstimate = body.timeEstimate;
+    }
 
     const task = await updateTask(id, taskId, updateData);
 

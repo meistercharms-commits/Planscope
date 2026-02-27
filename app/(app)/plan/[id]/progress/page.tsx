@@ -98,38 +98,35 @@ export default function PlanProgressPage({
     };
     setPlan(updatedPlan);
 
-    if (newStatus === "done") {
-      // Calculate completion percentage
-      const activeTasks = updatedPlan.tasks.filter((t) => t.section !== "not_this_week");
-      const doneCount = activeTasks.filter((t) => t.status === "done").length;
-      const totalActive = activeTasks.length;
-      const completionPercent = totalActive > 0
-        ? Math.round((doneCount / totalActive) * 100)
-        : 0;
-
-      // Show milestone celebration or regular message
-      let msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];
-
-      if (completionPercent === 50) {
-        msg = "Halfway there. Keep it going.";
-      } else if (completionPercent === 75) {
-        msg = "Nearly done. You're in the home stretch.";
-      } else if (completionPercent === 100) {
-        msg = "All done. Great work.";
-      }
-
-      showToast(msg);
-
-      // Fire celebration notification (runs async, doesn't block UI)
-      triggerCelebration(doneCount, totalActive).catch(() => {});
-    }
-
     try {
       await fetch(`/api/plans/${id}/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
+
+      // Celebrate only after server confirms
+      if (newStatus === "done") {
+        const activeTasks = updatedPlan.tasks.filter((t) => t.section !== "not_this_week");
+        const doneCount = activeTasks.filter((t) => t.status === "done").length;
+        const totalActive = activeTasks.length;
+        const completionPercent = totalActive > 0
+          ? Math.round((doneCount / totalActive) * 100)
+          : 0;
+
+        let msg = celebMessages[Math.floor(Math.random() * celebMessages.length)];
+
+        if (completionPercent === 50) {
+          msg = "Halfway there. Keep it going.";
+        } else if (completionPercent === 75) {
+          msg = "Nearly done. You're in the home stretch.";
+        } else if (completionPercent === 100) {
+          msg = "All done. Great work.";
+        }
+
+        showToast(msg);
+        triggerCelebration(doneCount, totalActive).catch(() => {});
+      }
     } catch {
       // Revert on error
       setPlan({

@@ -67,8 +67,13 @@ export async function getAuthOrAnon(): Promise<{
     const isAnon =
       userRecord.providerData.length === 0 && !userRecord.email;
     return { userId: auth.userId, isAnon };
-  } catch {
-    return { userId: auth.userId, isAnon: true };
+  } catch (err) {
+    // Only treat "user not found" as anonymous — re-throw real errors
+    const code = (err as { code?: string }).code;
+    if (code === "auth/user-not-found") {
+      return { userId: auth.userId, isAnon: true };
+    }
+    throw err;
   }
 }
 

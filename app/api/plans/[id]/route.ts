@@ -48,6 +48,20 @@ export async function PATCH(
       );
     }
 
+    // Enforce valid state transitions
+    const validTransitions: Record<string, string[]> = {
+      review: ["active", "archived"],
+      active: ["completed", "archived"],
+      completed: ["archived"],
+      archived: [],
+    };
+    if (!validTransitions[plan.status]?.includes(body.status)) {
+      return NextResponse.json(
+        { error: `Cannot change status from ${plan.status} to ${body.status}` },
+        { status: 400 }
+      );
+    }
+
     await updatePlan(id, { status: body.status });
 
     // Refetch plan with tasks to return updated state

@@ -40,6 +40,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
+    // Handle label update
+    if ("label" in body && !("status" in body)) {
+      const label = typeof body.label === "string" ? body.label.trim().slice(0, 50) : null;
+      await updatePlan(id, { label: label || null });
+      const updated = await getPlan(id, auth.userId);
+      return NextResponse.json(updated);
+    }
+
     const validStatuses = ["review", "active", "completed", "archived"];
     if (!body.status || !validStatuses.includes(body.status)) {
       return NextResponse.json(

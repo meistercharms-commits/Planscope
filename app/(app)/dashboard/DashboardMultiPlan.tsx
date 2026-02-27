@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Check } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 interface PlanSummary {
@@ -15,16 +15,51 @@ interface PlanSummary {
 }
 
 export default function DashboardMultiPlan({
-  plans,
+  plans: initialPlans,
 }: {
   plans: PlanSummary[];
   tier: string;
 }) {
+  const [plans, setPlans] = useState(initialPlans);
   const [selectedId, setSelectedId] = useState(plans[0].id);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const selected = plans.find((p) => p.id === selectedId) || plans[0];
   const percentage = selected.totalTasks > 0
     ? Math.round((selected.completedTasks / selected.totalTasks) * 100)
     : 0;
+
+  function startRename() {
+    setEditingId(selected.id);
+    setEditValue(selected.label || "");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  async function saveRename() {
+    if (saving || !editingId) return;
+    const trimmed = editValue.trim().slice(0, 50);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/plans/${editingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: trimmed }),
+      });
+      if (res.ok) {
+        setPlans((prev) =>
+          prev.map((p) => (p.id === editingId ? { ...p, label: trimmed || "Plan" } : p))
+        );
+      }
+    } catch {
+      // Silently fail — label stays as-is
+    } finally {
+      setEditingId(null);
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
@@ -55,10 +90,44 @@ export default function DashboardMultiPlan({
       {/* Selected plan summary */}
       <div className="bg-bg-card rounded-lg shadow-card p-5">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="font-semibold text-text font-display text-lg">
-            {selected.label || "Plan"}
-          </h2>
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-bg-subtle text-text-secondary">
+          {editingId === selected.id ? (
+            <form
+              onSubmit={(e) => { e.preventDefault(); saveRename(); }}
+              className="flex items-center gap-2 flex-1 mr-2"
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={saveRename}
+                maxLength={50}
+                className="flex-1 text-lg font-semibold text-text font-display bg-transparent border-b-2 border-primary outline-none py-0"
+                placeholder="Plan name"
+              />
+              <button
+                type="submit"
+                className="p-1 text-primary hover:bg-primary-light rounded transition-colors"
+                aria-label="Save name"
+              >
+                <Check size={16} />
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-text font-display text-lg">
+                {selected.label || "Plan"}
+              </h2>
+              <button
+                onClick={startRename}
+                className="p-1 text-text-tertiary hover:text-text-secondary transition-colors"
+                aria-label="Rename plan"
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
+          )}
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-bg-subtle text-text-secondary shrink-0">
             {selected.mode === "today" ? "Today" : "This Week"}
           </span>
         </div>

@@ -12,6 +12,7 @@ import {
   Eye,
   Bookmark,
   Archive,
+  Target,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -54,12 +55,31 @@ export default function PlanProgressPage({
   const [hideDone, setHideDone] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+
+  // Compute "UP NEXT" task early so the auto-expand hook stays above early returns
+  const nextTaskId = (() => {
+    if (!plan) return null;
+    const active = plan.tasks.filter((t) => t.section !== "not_this_week");
+    const doneN = active.filter((t) => t.status === "done").length;
+    if (doneN === 0) return null;
+    const doFirstTasks = plan.tasks.filter((t) => t.section === "do_first");
+    const thisWeekTasks = plan.tasks.filter((t) => t.section === "this_week");
+    return [...doFirstTasks, ...thisWeekTasks].find((t) => t.status !== "done")?.id ?? null;
+  })();
 
   useEffect(() => {
     fetchPlan();
     // Reset nudge timers when user opens their plan (re-schedules from now)
     cancelNudges(id).then(() => scheduleNudges(id)).catch((err) => console.error("[Progress] Nudge scheduling failed:", err));
   }, [id]);
+
+  // Auto-expand the "UP NEXT" card after a completion
+  useEffect(() => {
+    if (nextTaskId && !expandedTaskId) {
+      setExpandedTaskId(nextTaskId);
+    }
+  }, [nextTaskId]);
 
   async function fetchPlan() {
     try {
@@ -78,6 +98,11 @@ export default function PlanProgressPage({
     if (!plan) return;
 
     const newStatus: PlanTask["status"] = currentStatus === "done" ? "pending" : "done";
+
+    // Auto-collapse expanded card when marking done
+    if (newStatus === "done" && expandedTaskId === taskId) {
+      setExpandedTaskId(null);
+    }
 
     // Optimistic update
     const updatedPlan = {
@@ -269,11 +294,7 @@ export default function PlanProgressPage({
 
   const weekStart = new Date(plan.weekStart);
 
-  // "What's next" — highlight the first uncompleted task (only after 1+ completed)
-  const orderedActive = [...doFirst, ...thisWeek];
-  const nextTaskId = doneCount > 0
-    ? orderedActive.find((t) => t.status !== "done")?.id ?? null
-    : null;
+  // nextTaskId is computed above early returns (for hooks safety)
 
   return (
     <div>
@@ -307,6 +328,13 @@ export default function PlanProgressPage({
         }
         .animate-next-pulse {
           animation: nextPulse 2s ease-in-out infinite;
+        }
+        @keyframes expandFadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-expand-fade-in {
+          animation: expandFadeIn 0.2s ease-out 0.15s both;
         }
       `}</style>
       {/* Progress Bar */}
@@ -342,6 +370,8 @@ export default function PlanProgressPage({
                   planId={id}
                   userTier={user?.tier}
                   isNext={task.id === nextTaskId}
+                  expanded={expandedTaskId === task.id}
+                  onToggleExpand={() => setExpandedTaskId((prev) => prev === task.id ? null : task.id)}
                 />
               ))}
             </div>
@@ -383,6 +413,8 @@ export default function PlanProgressPage({
                       planId={id}
                       userTier={user?.tier}
                       isNext={task.id === nextTaskId}
+                      expanded={expandedTaskId === task.id}
+                      onToggleExpand={() => setExpandedTaskId((prev) => prev === task.id ? null : task.id)}
                     />
                   ))}
                 </div>
@@ -566,6 +598,8 @@ function TaskProgressCard({
   planId,
   userTier,
   isNext,
+  expanded,
+  onToggleExpand,
 }: {
   task: PlanTask;
   onToggle: () => void;
@@ -573,22 +607,19 @@ function TaskProgressCard({
   planId: string;
   userTier?: string;
   isNext?: boolean;
+  expanded: boolean;
+  onToggleExpand: () => void;
 }) {
   const isDone = task.status === "done";
   const colors = getCategoryColors(task.category);
   const [hovered, setHovered] = useState(false);
   const [popKey, setPopKey] = useState(0);
 
-  function handleClick() {
-    if (!isDone) setPopKey((k) => k + 1);
-    onToggle();
-  }
-
   if (hidden) return null;
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all duration-200 border-l-[3px] ${
+      className={`rounded-lg cursor-pointer transition-all duration-200 border-l-[3px] ${
         isDone
           ? "bg-bg-subtle opacity-60"
           : isNext
@@ -603,93 +634,127 @@ function TaskProgressCard({
           "--pulse-color-dim": colors.border + "40",
         } as React.CSSProperties : {}),
       }}
-      onClick={handleClick}
+      onClick={isDone ? onToggle : onToggleExpand}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Checkbox — category-coloured when done, pops on toggle */}
-      <div
-        key={popKey}
-        className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 ${
-          isDone
-            ? "border-transparent animate-checkbox-pop"
-            : "border-border hover:border-primary/50"
-        }`}
-        style={
-          isDone
-            ? { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }
-            : undefined
-        }
-      >
-        {isDone && (
-          <Check size={14} className="text-white animate-checkmark" />
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className="w-4 h-4 flex-shrink-0 inline-block"
-            style={{
-              maskImage: `url(${colors.icon})`,
-              maskSize: "contain",
-              maskRepeat: "no-repeat",
-              WebkitMaskImage: `url(${colors.icon})`,
-              WebkitMaskSize: "contain",
-              WebkitMaskRepeat: "no-repeat",
-              backgroundColor: isDone ? colors.border + "80" : colors.border,
-            }}
-          />
-          <p
-            className={`font-medium text-sm transition-all duration-200 flex-1 ${
-              isDone ? "line-through text-text-secondary" : "text-text"
+      {/* Always-visible row: checkbox, icon, title, badge, expand indicator */}
+      <div className="flex items-start gap-3 p-4">
+        {/* Checkbox — larger touch target, stops propagation */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isDone) setPopKey((k) => k + 1);
+            onToggle();
+          }}
+          className="flex-shrink-0 p-1 -m-1 cursor-pointer"
+          aria-label={isDone ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
+        >
+          <div
+            key={popKey}
+            className={`w-5 h-5 rounded border flex items-center justify-center transition-all duration-200 ${
+              isDone
+                ? "border-transparent animate-checkbox-pop"
+                : "border-border hover:border-primary/50"
             }`}
+            style={
+              isDone
+                ? { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }
+                : undefined
+            }
           >
-            {isNext && !isDone && (
+            {isDone && (
+              <Check size={14} className="text-white animate-checkmark" />
+            )}
+          </div>
+        </button>
+
+        {/* Title row */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className="w-4 h-4 flex-shrink-0 inline-block"
+              style={{
+                maskImage: `url(${colors.icon})`,
+                maskSize: "contain",
+                maskRepeat: "no-repeat",
+                WebkitMaskImage: `url(${colors.icon})`,
+                WebkitMaskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                backgroundColor: isDone ? colors.border + "80" : colors.border,
+              }}
+            />
+            <p
+              className={`font-medium text-sm transition-all duration-200 flex-1 ${
+                isDone ? "line-through text-text-secondary" : "text-text"
+              }`}
+            >
+              {isNext && !isDone && (
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest mr-1.5 align-middle"
+                  style={{ color: colors.border }}
+                >
+                  Up next
+                </span>
+              )}
+              {task.title}
+            </p>
+            {!isDone && (
               <span
-                className="text-[9px] font-bold uppercase tracking-widest mr-1.5 align-middle"
-                style={{ color: colors.border }}
+                className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: colors.badge, color: colors.badgeText }}
               >
-                Up next
+                {colors.label}
               </span>
             )}
-            {task.title}
-          </p>
-          {!isDone && (
-            <span
-              className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: colors.badge, color: colors.badgeText }}
-            >
-              {colors.label}
-            </span>
-          )}
-        </div>
-        {task.context && (
-          <p className="text-xs text-text-secondary mt-1 ml-6">
-            {task.context.replace(/\s*[·|]\s*/g, ". ")}
-          </p>
-        )}
-        {task.timeEstimate && (
-          <div className="flex items-center gap-1 mt-1.5 ml-6">
-            <img src="/icons/timer.svg" alt="" className="w-3 h-3 opacity-40" />
-            <span className="text-xs text-text-secondary">
-              {task.timeEstimate}
-            </span>
           </div>
+        </div>
+
+        {/* Expand/collapse indicator for pending tasks */}
+        {!isDone && (
+          <ChevronDown
+            size={16}
+            className={`flex-shrink-0 self-center text-text-tertiary transition-transform duration-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
         )}
       </div>
 
-      {/* Focus mode chevron — all users, pending tasks only */}
+      {/* Expandable detail area — context, time, Focus Mode button */}
       {!isDone && (
-        <Link
-          href={`/plan/${planId}/focus/${task.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-shrink-0 self-center p-2 -mr-2 text-text-tertiary hover:text-primary transition-colors"
-          aria-label={`Focus on ${task.title}`}
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-out"
+          style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
         >
-          <ChevronRight size={18} />
-        </Link>
+          <div className="overflow-hidden">
+            <div className="px-4 pb-4 ml-8">
+              {task.context && (
+                <p className="text-xs text-text-secondary">
+                  {task.context.replace(/\s*[·|]\s*/g, ". ")}
+                </p>
+              )}
+              {task.timeEstimate && (
+                <div className="flex items-center gap-1 mt-1.5">
+                  <img src="/icons/timer.svg" alt="" className="w-3 h-3 opacity-40" />
+                  <span className="text-xs text-text-secondary">
+                    {task.timeEstimate}
+                  </span>
+                </div>
+              )}
+              <Link
+                href={`/plan/${planId}/focus/${task.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.97] animate-expand-fade-in"
+                style={{ backgroundColor: colors.border }}
+              >
+                <Target size={16} />
+                Focus mode
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

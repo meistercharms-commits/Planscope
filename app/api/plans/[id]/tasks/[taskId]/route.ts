@@ -18,6 +18,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
+    // Archived/completed plans are read-only
+    if (plan.status === "archived" || plan.status === "completed") {
+      return NextResponse.json({ error: "Plan is archived" }, { status: 403 });
+    }
+
     // Verify task belongs to this plan
     const existingTask = await getTask(id, taskId);
     if (!existingTask) {
@@ -100,6 +105,10 @@ export async function DELETE(
     const plan = await getPlan(id, auth.userId);
     if (!plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    }
+
+    if (plan.status === "archived" || plan.status === "completed") {
+      return NextResponse.json({ error: "Plan is archived" }, { status: 403 });
     }
 
     // Verify task belongs to this plan

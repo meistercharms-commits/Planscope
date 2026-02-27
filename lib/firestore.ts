@@ -247,6 +247,30 @@ export async function deleteUserAndData(uid: string): Promise<void> {
 
 // ─── Plan Operations ───
 
+export async function archiveStalePlans(userId: string): Promise<number> {
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const weekStart = new Date(now);
+  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+  weekStart.setUTCHours(0, 0, 0, 0);
+
+  const snap = await db
+    .collection("plans")
+    .where("userId", "==", userId)
+    .where("status", "in", ["active", "review"])
+    .where("weekStart", "<", Timestamp.fromDate(weekStart))
+    .get();
+
+  if (snap.empty) return 0;
+
+  const batch = db.batch();
+  snap.docs.forEach((doc) => {
+    batch.update(doc.ref, { status: "archived", updatedAt: Timestamp.now() });
+  });
+  await batch.commit();
+  return snap.size;
+}
+
 export async function getActivePlans(
   userId: string
 ): Promise<PlanWithTasks[]> {

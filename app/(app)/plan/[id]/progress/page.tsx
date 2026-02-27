@@ -25,6 +25,7 @@ import type { PlanTask } from "@/types";
 interface PlanData {
   id: string;
   mode: string;
+  status: string;
   weekStart: string;
   weekEnd: string;
   tasks: PlanTask[];
@@ -278,6 +279,8 @@ export default function PlanProgressPage({
 
   if (!plan) return null;
 
+  const isArchived = plan.status === "archived" || plan.status === "completed";
+
   const activeTasks = plan.tasks.filter(
     (t) => t.section !== "not_this_week"
   );
@@ -341,6 +344,15 @@ export default function PlanProgressPage({
       <ProgressBar done={doneCount} total={totalActive} />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+        {/* Archived banner */}
+        {isArchived && (
+          <div className="bg-bg-subtle rounded-lg p-3 mb-4 text-center">
+            <p className="text-sm text-text-secondary">
+              This plan has been archived. You&apos;re viewing a snapshot.
+            </p>
+          </div>
+        )}
+
         {/* Plan Header */}
         <div className="mb-6">
           <h1 className="text-[28px] font-bold text-text font-display">
@@ -372,6 +384,7 @@ export default function PlanProgressPage({
                   isNext={task.id === nextTaskId}
                   expanded={expandedTaskId === task.id}
                   onToggleExpand={() => setExpandedTaskId((prev) => prev === task.id ? null : task.id)}
+                  isArchived={isArchived}
                 />
               ))}
             </div>
@@ -415,6 +428,7 @@ export default function PlanProgressPage({
                       isNext={task.id === nextTaskId}
                       expanded={expandedTaskId === task.id}
                       onToggleExpand={() => setExpandedTaskId((prev) => prev === task.id ? null : task.id)}
+                      isArchived={isArchived}
                     />
                   ))}
                 </div>
@@ -483,8 +497,8 @@ export default function PlanProgressPage({
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="space-y-3 pt-4 pb-8">
+        {/* Action Buttons — hidden for archived plans */}
+        {!isArchived && <div className="space-y-3 pt-4 pb-8">
           <Button
             variant="secondary"
             fullWidth
@@ -585,7 +599,7 @@ export default function PlanProgressPage({
               Moves this plan to your history so you can start fresh.
             </p>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -600,6 +614,7 @@ function TaskProgressCard({
   isNext,
   expanded,
   onToggleExpand,
+  isArchived,
 }: {
   task: PlanTask;
   onToggle: () => void;
@@ -609,6 +624,7 @@ function TaskProgressCard({
   isNext?: boolean;
   expanded: boolean;
   onToggleExpand: () => void;
+  isArchived?: boolean;
 }) {
   const isDone = task.status === "done";
   const colors = getCategoryColors(task.category);
@@ -619,23 +635,25 @@ function TaskProgressCard({
 
   return (
     <div
-      className={`rounded-lg cursor-pointer transition-all duration-200 border-l-[3px] ${
+      className={`rounded-lg transition-all duration-200 border-l-[3px] ${
+        isArchived ? "" : "cursor-pointer"
+      } ${
         isDone
           ? "bg-bg-subtle opacity-60"
-          : isNext
+          : isNext && !isArchived
             ? "bg-bg-card shadow-md animate-next-pulse"
             : "bg-bg-card shadow-card"
       }`}
       style={{
         borderLeftColor: isDone ? colors.border + "80" : colors.border,
-        backgroundColor: !isDone && hovered ? colors.hoverBg : undefined,
-        ...(isNext && !isDone ? {
+        backgroundColor: !isDone && !isArchived && hovered ? colors.hoverBg : undefined,
+        ...(isNext && !isDone && !isArchived ? {
           "--pulse-color": colors.border,
           "--pulse-color-dim": colors.border + "40",
         } as React.CSSProperties : {}),
       }}
-      onClick={isDone ? onToggle : onToggleExpand}
-      onMouseEnter={() => setHovered(true)}
+      onClick={isArchived ? undefined : (isDone ? onToggle : onToggleExpand)}
+      onMouseEnter={() => !isArchived && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Always-visible row: checkbox, icon, title, badge, expand indicator */}
@@ -645,11 +663,13 @@ function TaskProgressCard({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            if (isArchived) return;
             if (!isDone) setPopKey((k) => k + 1);
             onToggle();
           }}
-          className="flex-shrink-0 p-1 -m-1 cursor-pointer"
+          className={`flex-shrink-0 p-1 -m-1 ${isArchived ? "" : "cursor-pointer"}`}
           aria-label={isDone ? `Mark "${task.title}" as not done` : `Mark "${task.title}" as done`}
+          disabled={isArchived}
         >
           <div
             key={popKey}
@@ -690,7 +710,7 @@ function TaskProgressCard({
                 isDone ? "line-through text-text-secondary" : "text-text"
               }`}
             >
-              {isNext && !isDone && (
+              {isNext && !isDone && !isArchived && (
                 <span
                   className="text-[9px] font-bold uppercase tracking-widest mr-1.5 align-middle"
                   style={{ color: colors.border }}
@@ -712,7 +732,7 @@ function TaskProgressCard({
         </div>
 
         {/* Expand/collapse indicator for pending tasks */}
-        {!isDone && (
+        {!isDone && !isArchived && (
           <ChevronDown
             size={16}
             className={`flex-shrink-0 self-center text-text-tertiary transition-transform duration-300 ${
@@ -723,7 +743,7 @@ function TaskProgressCard({
       </div>
 
       {/* Expandable detail area — context, time, Focus Mode button */}
-      {!isDone && (
+      {!isDone && !isArchived && (
         <div
           className="grid transition-[grid-template-rows] duration-300 ease-out"
           style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}

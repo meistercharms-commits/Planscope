@@ -1,9 +1,13 @@
 "use client";
 
-import { AlertTriangle, MessageCircle, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, MessageCircle, ChevronDown, ChevronRight } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 export default function PlanReviewPreviewPage() {
+  const [doFirstOpen, setDoFirstOpen] = useState(true);
+  const [thisWeekOpen, setThisWeekOpen] = useState(true);
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       {/* Headline */}
@@ -24,41 +28,52 @@ export default function PlanReviewPreviewPage() {
         </div>
       </div>
 
-      <div className="h-px bg-border mb-6" />
+      <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* Do First */}
       <section className="mb-8">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display">
+        <button
+          onClick={() => setDoFirstOpen(!doFirstOpen)}
+          className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display w-full text-left cursor-pointer"
+        >
+          {doFirstOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           <img src="/icons/do_first.svg" alt="" className="w-5 h-5" />
           Do First
-        </h2>
-        <div className="space-y-3">
-          <div className="bg-bg-card rounded-lg p-4 shadow-card">
-            <div className="flex items-center gap-2 mb-1">
-              <img src="/icons/work.svg" alt="work" className="w-4 h-4 flex-shrink-0" />
-              <p className="font-medium text-text">Finish Q1 project report</p>
+        </button>
+        {doFirstOpen && (
+          <div className="space-y-3">
+            <div className="bg-bg-card rounded-lg p-4 shadow-card">
+              <div className="flex items-center gap-2 mb-1">
+                <img src="/icons/work.svg" alt="work" className="w-4 h-4 flex-shrink-0" />
+                <p className="font-medium text-text">Finish Q1 project report</p>
+              </div>
+              <p className="text-xs text-text-secondary">30 mins • High effort</p>
             </div>
-            <p className="text-xs text-text-secondary">30 mins • High effort</p>
-          </div>
-          <div className="bg-bg-card rounded-lg p-4 shadow-card">
-            <div className="flex items-center gap-2 mb-1">
-              <img src="/icons/work.svg" alt="work" className="w-4 h-4 flex-shrink-0" />
-              <p className="font-medium text-text">Client call preparation</p>
+            <div className="bg-bg-card rounded-lg p-4 shadow-card">
+              <div className="flex items-center gap-2 mb-1">
+                <img src="/icons/work.svg" alt="work" className="w-4 h-4 flex-shrink-0" />
+                <p className="font-medium text-text">Client call preparation</p>
+              </div>
+              <p className="text-xs text-text-secondary">15 mins • Medium effort</p>
             </div>
-            <p className="text-xs text-text-secondary">15 mins • Medium effort</p>
           </div>
-        </div>
+        )}
       </section>
 
-      <div className="h-px bg-border mb-6" />
+      <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* This Week */}
       <section className="mb-8">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display">
+        <button
+          onClick={() => setThisWeekOpen(!thisWeekOpen)}
+          className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display w-full text-left cursor-pointer"
+        >
+          {thisWeekOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           <img src="/icons/this_week.svg" alt="" className="w-5 h-5" />
           This Week (7 tasks)
-        </h2>
+        </button>
 
+        {thisWeekOpen && (<div>
         <div className="mb-4">
           <h3 className="text-sm font-medium text-text mb-2 capitalize">work (4)</h3>
           <div className="space-y-3">
@@ -91,9 +106,10 @@ export default function PlanReviewPreviewPage() {
             </div>
           </div>
         </div>
+        </div>)}
       </section>
 
-      <div className="h-px bg-border mb-6" />
+      <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* Not This Week */}
       <section className="mb-8">

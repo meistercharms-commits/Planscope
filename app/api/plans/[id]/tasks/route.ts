@@ -17,6 +17,11 @@ export async function POST(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
+    // Archived/completed plans are read-only
+    if (plan.status === "archived" || plan.status === "completed") {
+      return NextResponse.json({ error: "Plan is archived" }, { status: 403 });
+    }
+
     // Validate title
     if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });

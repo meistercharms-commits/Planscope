@@ -44,6 +44,8 @@ export default function PlanReviewPage({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [parkedOpen, setParkedOpen] = useState(true);
+  const [doFirstOpen, setDoFirstOpen] = useState(true);
+  const [thisWeekOpen, setThisWeekOpen] = useState(true);
   const [tweakOpen, setTweakOpen] = useState(false);
   const [tweaking, setTweaking] = useState(false);
   const [learnings, setLearnings] = useState<LearningsSummary | null>(null);
@@ -227,31 +229,42 @@ export default function PlanReviewPage({
         </div>
       )}
 
-      <div className="h-px bg-border mb-6" />
+      <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* Do First */}
       {doFirst.length > 0 && (
         <section className="mb-8 animate-fade-in-up stagger-1" style={{ opacity: 0 }}>
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display">
+          <button
+            onClick={() => setDoFirstOpen(!doFirstOpen)}
+            className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display w-full text-left cursor-pointer"
+          >
+            {doFirstOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             <img src="/icons/do_first.svg" alt="" className="w-5 h-5" />
             Do First
-          </h2>
-          <div className="space-y-3">
-            {doFirst.map((task) => (
-              <TaskReviewCard key={task.id} task={task} showContext />
-            ))}
-          </div>
+          </button>
+          {doFirstOpen && (
+            <div className="space-y-3">
+              {doFirst.map((task) => (
+                <TaskReviewCard key={task.id} task={task} showContext />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
-      <div className="h-px bg-border mb-6" />
+      <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* This Week */}
       <section className="mb-8 animate-fade-in-up stagger-2" style={{ opacity: 0 }}>
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display">
+        <button
+          onClick={() => setThisWeekOpen(!thisWeekOpen)}
+          className="flex items-center gap-2 text-lg font-semibold text-text mb-4 font-display w-full text-left cursor-pointer"
+        >
+          {thisWeekOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           <img src={`/icons/${plan.mode === "today" ? "timer" : "this_week"}.svg`} alt="" className="w-5 h-5" />
           {plan.mode === "today" ? "Today" : "This Week"} ({doFirst.length + thisWeek.length} tasks)
-        </h2>
+        </button>
+        {thisWeekOpen && (<div>
         {categories.map((cat) => {
           const tasks = thisWeek.filter((t) => (t.category || "other") === cat);
           const catColors = getCategoryColors(cat);
@@ -274,9 +287,10 @@ export default function PlanReviewPage({
             </div>
           );
         })}
+        </div>)}
       </section>
 
-      <div className="h-px bg-border mb-6" />
+      <div className="h-px mb-6 mx-8 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* Not This Week */}
       {notThisWeek.length > 0 && (

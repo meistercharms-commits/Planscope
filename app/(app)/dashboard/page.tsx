@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getActivePlans } from "@/lib/firestore";
+import { getActivePlans, archiveStalePlans } from "@/lib/firestore";
 import { getUserTier, canHaveMultipleActivePlans } from "@/lib/tiers";
 import DashboardMultiPlan from "./DashboardMultiPlan";
 import DashboardEmpty from "./DashboardEmpty";
@@ -19,6 +19,8 @@ export default async function DashboardPage() {
 
   let activePlans;
   try {
+    // Archive plans from past weeks before fetching current ones
+    await archiveStalePlans(auth.userId);
     activePlans = await getActivePlans(auth.userId);
   } catch (e) {
     // Firestore index may still be building — show empty state

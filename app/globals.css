@@ -15,6 +15,11 @@
   --color-warning: #FFB347;
   --color-error: #E74C3C;
 
+  /* Warm feedback — amber tones for gentle alerts */
+  --color-warm-bg: #F9F5F0;
+  --color-warm-border: #E8DDD0;
+  --color-warm-text: #8A6D4B;
+
   /* Category accent colours */
   --color-cat-work: #4A90B0;
   --color-cat-health: #6BA87D;
@@ -209,6 +214,7 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

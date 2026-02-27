@@ -171,7 +171,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <Link
             href="/new-plan"
-            className="flex items-center gap-1 px-2 py-1.5 text-xs sm:text-sm sm:px-3 sm:gap-1.5 font-medium text-primary hover:bg-primary-light rounded-md transition-colors whitespace-nowrap"
+            className={`flex items-center gap-1 px-3 py-2 text-xs sm:text-sm sm:gap-1.5 font-medium rounded-md transition-colors whitespace-nowrap ${pathname === "/new-plan" ? "bg-primary-light text-primary" : "text-primary hover:bg-primary-light"}`}
           >
             <Plus size={16} />
             New Plan
@@ -205,7 +205,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         role="menuitem"
                         tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
+                        className={`flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors ${pathname === "/dashboard" ? "text-primary bg-primary-light" : "text-text hover:bg-bg-subtle focus:bg-bg-subtle"}`}
                       >
                         <LayoutDashboard size={16} />
                         My Plans
@@ -215,7 +215,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         role="menuitem"
                         tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
+                        className={`flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors ${pathname === "/history" ? "text-primary bg-primary-light" : "text-text hover:bg-bg-subtle focus:bg-bg-subtle"}`}
                       >
                         <Calendar size={16} />
                         Plan History
@@ -225,7 +225,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         role="menuitem"
                         tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
+                        className={`flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors ${pathname === "/settings" ? "text-primary bg-primary-light" : "text-text hover:bg-bg-subtle focus:bg-bg-subtle"}`}
                       >
                         <Settings size={16} />
                         Profile & Settings
@@ -262,7 +262,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         role="menuitem"
                         tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
+                        className={`flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors ${pathname === "/dashboard" ? "text-primary bg-primary-light" : "text-text hover:bg-bg-subtle focus:bg-bg-subtle"}`}
                       >
                         <LayoutDashboard size={16} />
                         My Plans
@@ -272,7 +272,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         role="menuitem"
                         tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
+                        className={`flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors ${pathname === "/history" ? "text-primary bg-primary-light" : "text-text hover:bg-bg-subtle focus:bg-bg-subtle"}`}
                       >
                         <Calendar size={16} />
                         Plan History
@@ -282,7 +282,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                         role="menuitem"
                         tabIndex={-1}
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg-subtle focus:bg-bg-subtle outline-none transition-colors"
+                        className={`flex items-center gap-2 px-3 py-2 text-sm outline-none transition-colors ${pathname === "/settings" ? "text-primary bg-primary-light" : "text-text hover:bg-bg-subtle focus:bg-bg-subtle"}`}
                       >
                         <Settings size={16} />
                         Profile & Settings

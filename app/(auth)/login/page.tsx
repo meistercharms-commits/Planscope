@@ -102,12 +102,12 @@ function LoginForm() {
         />
       </div>
 
-      <h2 className="text-xl font-semibold text-text mb-6 font-display">
+      <h1 className="text-xl font-semibold text-text mb-6 font-display">
         Welcome back
-      </h2>
+      </h1>
 
       {oauthError && oauthErrors[oauthError] && (
-        <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B] mb-4">
+        <div className="px-4 py-3 bg-warm-bg border border-warm-border rounded-md text-sm text-warm-text mb-4">
           {oauthErrors[oauthError]}
         </div>
       )}
@@ -195,7 +195,7 @@ function LoginForm() {
         </div>
 
         {error && (
-          <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B]">
+          <div className="px-4 py-3 bg-warm-bg border border-warm-border rounded-md text-sm text-warm-text">
             {error}
           </div>
         )}

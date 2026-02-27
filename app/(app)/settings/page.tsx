@@ -514,7 +514,7 @@ export default function SettingsPage() {
                           )}
                         </div>
                         {emailError && (
-                          <p className="text-sm text-[#8A6D4B]">{emailError}</p>
+                          <p className="text-sm text-warm-text">{emailError}</p>
                         )}
                         <div className="flex gap-2">
                           <Button type="submit" size="sm" loading={emailLoading}>
@@ -591,8 +591,11 @@ export default function SettingsPage() {
                           required
                           minLength={6}
                         />
+                        {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                          <p className="text-xs text-warm-text">Passwords don&apos;t match yet.</p>
+                        )}
                         {passwordError && (
-                          <p className="text-sm text-[#8A6D4B]">{passwordError}</p>
+                          <p className="text-sm text-warm-text">{passwordError}</p>
                         )}
                         <div className="flex gap-2">
                           <Button type="submit" size="sm" loading={passwordLoading}>
@@ -992,6 +995,7 @@ export default function SettingsPage() {
             confirm.
           </p>
           <Input
+            label="Confirmation"
             placeholder="Type DELETE"
             value={deleteConfirmation}
             onChange={(e) => setDeleteConfirmation(e.target.value)}

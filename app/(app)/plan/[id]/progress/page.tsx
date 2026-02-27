@@ -93,6 +93,7 @@ export default function PlanProgressPage({
       const data = await res.json();
       setPlan(data);
     } catch {
+      showToast("Couldn't load this plan.", "error");
       router.push("/new-plan");
     } finally {
       setLoading(false);
@@ -297,7 +298,7 @@ export default function PlanProgressPage({
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <div className="space-y-3">
           <SkeletonTaskCard />
           <SkeletonTaskCard />
@@ -411,7 +412,7 @@ export default function PlanProgressPage({
         </div>
       )}
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         {/* Archived banner */}
         {isArchived && (
           <div className="bg-bg-subtle rounded-lg p-3 mb-4 text-center">
@@ -618,6 +619,7 @@ export default function PlanProgressPage({
               <div className="flex gap-2">
                 <input
                   type="text"
+                  aria-label="New task title"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder="What needs doing?"

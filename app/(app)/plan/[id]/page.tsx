@@ -83,6 +83,7 @@ export default function PlanReviewPage({
       }
       setPlan(data);
     } catch {
+      showToast("Couldn't load this plan.", "error");
       router.push("/new-plan");
     } finally {
       setLoading(false);
@@ -151,7 +152,7 @@ export default function PlanReviewPage({
     showToast("Plan tweaking is coming soon.");
   }
 
-  if (loading) return <Spinner />;
+  if (loading) return <Spinner statusMessages={["Loading your plan..."]} duration={5} />;
   if (!plan) return null;
 
   // Parse plan metadata
@@ -385,7 +386,7 @@ export default function PlanReviewPage({
       {/* Actions */}
       <div className="space-y-3 animate-fade-in-up stagger-4 pb-8" style={{ opacity: 0 }}>
         <Button onClick={handleAccept} loading={saving} fullWidth size="lg">
-          Accept & Get going
+          Accept & get going
         </Button>
         <Button
           variant="secondary"

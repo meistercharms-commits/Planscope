@@ -254,8 +254,8 @@ export default function NewPlanPage() {
       <div className="animate-fade-in">
         {/* Active plan warning for Free/Pro */}
         {activePlan && tierData && tierData.tier !== "pro_plus" && (
-          <div className="bg-[#F9F5F0] border border-[#E8DDD0] rounded-lg p-4 mb-6">
-            <p className="text-sm font-medium text-[#8A6D4B] mb-1">
+          <div className="bg-warm-bg border border-warm-border rounded-lg p-4 mb-6">
+            <p className="text-sm font-medium text-warm-text mb-1">
               You already have an active plan
             </p>
             <p className="text-sm text-text-secondary mb-3">
@@ -448,7 +448,7 @@ export default function NewPlanPage() {
                 )}
               </div>
               {speechError && (
-                <p className="text-xs text-[#8A6D4B] mt-1">{speechError}</p>
+                <p className="text-xs text-warm-text mt-1">{speechError}</p>
               )}
               {isListening && (
                 <p className="text-xs text-primary mt-1 flex items-center gap-1.5">
@@ -517,7 +517,7 @@ export default function NewPlanPage() {
 
           {/* Error */}
           {error && (
-            <div className="px-4 py-3 bg-[#F9F5F0] border border-[#E8DDD0] rounded-md text-sm text-[#8A6D4B]">
+            <div className="px-4 py-3 bg-warm-bg border border-warm-border rounded-md text-sm text-warm-text">
               {error}
             </div>
           )}
@@ -533,7 +533,7 @@ export default function NewPlanPage() {
               {useCopy ? "Copy & make my plan" : "Make me a plan"}
             </Button>
             {attempted && (!timeAvailable || !energyLevel || !focusArea) && (
-              <p className="text-xs text-[#8A6D4B] mt-2 text-center">
+              <p className="text-xs text-warm-text mt-2 text-center">
                 Please select{!timeAvailable ? " time available" : ""}{!energyLevel ? `${!timeAvailable ? "," : ""} energy level` : ""}{!focusArea ? `${!timeAvailable || !energyLevel ? "," : ""} main focus` : ""} above.
               </p>
             )}

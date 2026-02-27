@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           } ${className}`}
           {...props}
         />
-        {error && <p className="text-sm text-[#8A6D4B]">{error}</p>}
+        {error && <p className="text-sm text-warm-text">{error}</p>}
       </div>
     );
   }
@@ -62,7 +62,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           } ${className}`}
           {...props}
         />
-        {error && <p className="text-sm text-[#8A6D4B]">{error}</p>}
+        {error && <p className="text-sm text-warm-text">{error}</p>}
       </div>
     );
   }

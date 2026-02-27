@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Pencil } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
 
 interface PlanSummary {
   id: string;
@@ -19,6 +20,7 @@ export default function DashboardMultiPlan({
   plans: PlanSummary[];
   tier: string;
 }) {
+  const { showToast } = useToast();
   const [plans, setPlans] = useState(initialPlans);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -53,8 +55,8 @@ export default function DashboardMultiPlan({
         body: JSON.stringify({ label: trimmed }),
       });
     } catch {
-      // Revert on error
       setPlans(initialPlans);
+      showToast("Couldn't rename that plan. Try again.", "error");
     }
   }
 

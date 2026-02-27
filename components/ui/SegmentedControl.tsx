@@ -34,7 +34,7 @@ export default function SegmentedControl({
           {label}{required && <span className="text-accent ml-0.5">*</span>}
         </label>
       )}
-      <div className={`${compact ? "grid grid-cols-5 gap-1.5" : "flex gap-2"} ${error ? "ring-1 ring-accent/40 rounded-full p-0.5" : ""}`}>
+      <div className={`${compact ? "grid grid-cols-5 gap-1" : "flex gap-2"} ${error ? "ring-1 ring-accent/40 rounded-full p-0.5" : ""}`}>
         {options.map((option) => (
           <button
             key={option.value}

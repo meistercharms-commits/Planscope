@@ -5,11 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Planscope',
   webDir: 'out',
   server: {
-    // For development, point to your local dev server:
-    // Use your Mac's local IP so real devices can connect over WiFi
-    url: 'http://172.20.10.3:3000',
-    // For production, replace with your deployed URL:
-    // url: 'https://planscope.co',
+    url: 'https://app.planscope.app',
     androidScheme: 'https',
   },
   plugins: {
@@ -25,7 +21,7 @@ const config: CapacitorConfig = {
     },
     LocalNotifications: {
       smallIcon: 'ic_notification',
-      iconColor: '#6366F1',
+      iconColor: '#2E8B6A',
       sound: 'gentle_chime.wav',
     },
   },

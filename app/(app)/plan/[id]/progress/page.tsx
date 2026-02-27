@@ -269,6 +269,12 @@ export default function PlanProgressPage({
 
   const weekStart = new Date(plan.weekStart);
 
+  // "What's next" — highlight the first uncompleted task (only after 1+ completed)
+  const orderedActive = [...doFirst, ...thisWeek];
+  const nextTaskId = doneCount > 0
+    ? orderedActive.find((t) => t.status !== "done")?.id ?? null
+    : null;
+
   return (
     <div>
       <style>{`
@@ -286,6 +292,21 @@ export default function PlanProgressPage({
         }
         .animate-task-complete {
           animation: slideOutLeft 0.5s ease-out forwards;
+        }
+        @keyframes checkboxPop {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.3); }
+          100% { transform: scale(1); }
+        }
+        .animate-checkbox-pop {
+          animation: checkboxPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes nextPulse {
+          0%, 100% { border-left-color: var(--pulse-color); }
+          50% { border-left-color: var(--pulse-color-dim); }
+        }
+        .animate-next-pulse {
+          animation: nextPulse 2s ease-in-out infinite;
         }
       `}</style>
       {/* Progress Bar */}
@@ -320,6 +341,7 @@ export default function PlanProgressPage({
                   hidden={hideDone && task.status === "done"}
                   planId={id}
                   userTier={user?.tier}
+                  isNext={task.id === nextTaskId}
                 />
               ))}
             </div>
@@ -360,6 +382,7 @@ export default function PlanProgressPage({
                       hidden={hideDone && task.status === "done"}
                       planId={id}
                       userTier={user?.tier}
+                      isNext={task.id === nextTaskId}
                     />
                   ))}
                 </div>
@@ -542,16 +565,24 @@ function TaskProgressCard({
   hidden,
   planId,
   userTier,
+  isNext,
 }: {
   task: PlanTask;
   onToggle: () => void;
   hidden: boolean;
   planId: string;
   userTier?: string;
+  isNext?: boolean;
 }) {
   const isDone = task.status === "done";
   const colors = getCategoryColors(task.category);
   const [hovered, setHovered] = useState(false);
+  const [popKey, setPopKey] = useState(0);
+
+  function handleClick() {
+    if (!isDone) setPopKey((k) => k + 1);
+    onToggle();
+  }
 
   if (hidden) return null;
 
@@ -560,21 +591,28 @@ function TaskProgressCard({
       className={`flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all duration-200 border-l-[3px] ${
         isDone
           ? "bg-bg-subtle opacity-60"
-          : "bg-bg-card shadow-card"
+          : isNext
+            ? "bg-bg-card shadow-md animate-next-pulse"
+            : "bg-bg-card shadow-card"
       }`}
       style={{
         borderLeftColor: isDone ? colors.border + "80" : colors.border,
         backgroundColor: !isDone && hovered ? colors.hoverBg : undefined,
+        ...(isNext && !isDone ? {
+          "--pulse-color": colors.border,
+          "--pulse-color-dim": colors.border + "40",
+        } as React.CSSProperties : {}),
       }}
-      onClick={onToggle}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Checkbox — category-coloured when done */}
+      {/* Checkbox — category-coloured when done, pops on toggle */}
       <div
+        key={popKey}
         className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 ${
           isDone
-            ? "border-transparent"
+            ? "border-transparent animate-checkbox-pop"
             : "border-border hover:border-primary/50"
         }`}
         style={
@@ -608,6 +646,14 @@ function TaskProgressCard({
               isDone ? "line-through text-text-secondary" : "text-text"
             }`}
           >
+            {isNext && !isDone && (
+              <span
+                className="text-[9px] font-bold uppercase tracking-widest mr-1.5 align-middle"
+                style={{ color: colors.border }}
+              >
+                Up next
+              </span>
+            )}
             {task.title}
           </p>
           {!isDone && (

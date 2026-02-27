@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useRef, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -8,12 +8,16 @@ import {
   AlertTriangle,
   MessageCircle,
   ArrowRight,
+  Share2,
+  Download,
+  X,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import LearningsInsight from "@/components/ui/LearningsInsight";
+import ClarityCard from "@/components/ui/ClarityCard";
 import type { LearningsSummary, PlanTask, PlanMeta } from "@/types";
 import { getCategoryColors } from "@/lib/category-colors";
 
@@ -24,6 +28,7 @@ interface PlanData {
   weekEnd: string;
   status: string;
   planMeta: string | null;
+  parsedDump: { tasks?: { title: string }[] } | null;
   tasks: PlanTask[];
 }
 
@@ -42,6 +47,9 @@ export default function PlanReviewPage({
   const [tweakOpen, setTweakOpen] = useState(false);
   const [tweaking, setTweaking] = useState(false);
   const [learnings, setLearnings] = useState<LearningsSummary | null>(null);
+  const [showClarityCard, setShowClarityCard] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const clarityCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchPlan();
@@ -88,12 +96,52 @@ export default function PlanReviewPage({
         body: JSON.stringify({ status: "active" }),
       });
       showToast("Plan saved. You've got this.");
-      router.push(`/plan/${id}/progress`);
+      setShowClarityCard(true);
     } catch {
       showToast("Something went wrong saving your plan.", "error");
     } finally {
       setSaving(false);
     }
+  }
+
+  const handleShare = useCallback(async () => {
+    if (!clarityCardRef.current) return;
+    setSharing(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(clarityCardRef.current, {
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+
+      // Try native share (mobile / Capacitor)
+      if (navigator.share && navigator.canShare) {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "planscope-clarity.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] });
+          return;
+        }
+      }
+
+      // Fallback: download
+      const link = document.createElement("a");
+      link.download = "planscope-clarity.png";
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      // User cancelled the share dialog — not an error
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("[ClarityCard] Share failed:", err);
+      showToast("Couldn't generate image. Try again.", "error");
+    } finally {
+      setSharing(false);
+    }
+  }, [showToast]);
+
+  function handleContinue() {
+    router.push(`/plan/${id}/progress`);
   }
 
   async function handleTweak(type: string) {
@@ -133,6 +181,13 @@ export default function PlanReviewPage({
   const weekStart = new Date(plan.weekStart);
   const weekEnd = new Date(plan.weekEnd);
   const dateRange = `${formatDate(weekStart)} – ${formatDate(weekEnd)}`;
+
+  // Clarity card stats
+  const thoughtsCount = plan.parsedDump?.tasks?.length ?? plan.tasks.length;
+  const prioritiesCount = doFirst.length;
+  const totalTasks = doFirst.length + thisWeek.length;
+  const parkedCount = notThisWeek.length;
+  const clarityWeekLabel = weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
@@ -332,6 +387,49 @@ export default function PlanReviewPage({
           Cancel
         </Button>
       </Modal>
+
+      {/* Clarity Card Overlay */}
+      {showClarityCard && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 animate-fade-in px-4">
+          <div className="relative animate-scale-in">
+            {/* Close button */}
+            <button
+              onClick={handleContinue}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-text-secondary hover:text-text transition-colors cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <ClarityCard
+              ref={clarityCardRef}
+              thoughtsCount={thoughtsCount}
+              prioritiesCount={prioritiesCount}
+              totalTasks={totalTasks}
+              parkedCount={parkedCount}
+              weekLabel={clarityWeekLabel}
+              mode={plan.mode}
+            />
+          </div>
+
+          <div className="flex gap-3 mt-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
+            <Button
+              variant="secondary"
+              onClick={handleShare}
+              loading={sharing}
+              size="sm"
+            >
+              {"share" in navigator ? (
+                <><Share2 size={16} className="mr-2" />Share</>
+              ) : (
+                <><Download size={16} className="mr-2" />Save image</>
+              )}
+            </Button>
+            <Button onClick={handleContinue} size="sm">
+              Continue to plan
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

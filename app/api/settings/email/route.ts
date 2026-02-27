@@ -53,12 +53,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if email already in use
+    // Check if email already in use (generic error to prevent enumeration)
     const existing = await getUserByEmail(trimmedEmail);
     if (existing) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
+        { error: "This email cannot be used. Please try a different one." },
+        { status: 400 }
       );
     }
 

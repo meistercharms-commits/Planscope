@@ -18,7 +18,7 @@ export async function createSessionCookie(idToken: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, sessionCookie, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     path: "/",
     maxAge: SESSION_EXPIRY / 1000,
     sameSite: "lax",

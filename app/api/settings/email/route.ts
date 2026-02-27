@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, rateLimit } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUser, getUserByEmail, updateUser } from "@/lib/firestore";
 

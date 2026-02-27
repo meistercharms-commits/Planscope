@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, rateLimit } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { getUser, updateUser } from "@/lib/firestore";
 import { stripe, isValidPriceId } from "@/lib/stripe-admin";
 

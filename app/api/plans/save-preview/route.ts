@@ -4,6 +4,28 @@ import { getAuthOrAnon } from "@/lib/auth";
 import { createPlanWithTasks } from "@/lib/firestore";
 import { canCreatePlan, canCreateAdditionalPlan } from "@/lib/tiers";
 
+const VALID_TIME = ["low", "medium", "high"];
+const VALID_ENERGY = ["drained", "ok", "fired_up"];
+const VALID_FOCUS = ["work", "health", "home", "money", "other"];
+
+function sanitiseConstraints(
+  raw: unknown
+): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const c = raw as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  if (typeof c.time_available === "string" && VALID_TIME.includes(c.time_available)) {
+    result.time_available = c.time_available;
+  }
+  if (typeof c.energy_level === "string" && VALID_ENERGY.includes(c.energy_level)) {
+    result.energy_level = c.energy_level;
+  }
+  if (typeof c.focus_area === "string" && VALID_FOCUS.includes(c.focus_area)) {
+    result.focus_area = c.focus_area;
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
 /**
  * POST /api/plans/save-preview
  * Saves an anonymous preview plan to Firestore after the user signs up / logs in.
@@ -142,7 +164,7 @@ export async function POST(req: NextRequest) {
       originalDump,
       parsedDump: null,
       planMeta,
-      constraints: preview.constraints || null,
+      constraints: sanitiseConstraints(preview.constraints),
       status: "review",
       tasks,
     });

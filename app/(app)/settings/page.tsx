@@ -90,21 +90,21 @@ export default function SettingsPage() {
       .then((data) => {
         if (data) setTierInfo(data);
       })
-      .catch(() => {});
+      .catch((err) => console.error("[Settings] Tier fetch failed:", err));
     if (user) {
       fetch("/api/settings/learn-enabled")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data) setLearnEnabled(data.learnEnabled);
         })
-        .catch(() => {});
+        .catch((err) => console.error("[Settings] Learn-enabled fetch failed:", err));
       // Load billing info (subscription status + portal URL)
       fetch("/api/billing/customer")
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data) setBillingInfo(data);
         })
-        .catch(() => {});
+        .catch((err) => console.error("[Settings] Billing fetch failed:", err));
       // Load notification preferences (must be inside user guard
       // so we have an auth session for the API call)
       fetch("/api/settings/notifications")
@@ -112,7 +112,7 @@ export default function SettingsPage() {
         .then((data) => {
           if (data) setNotifPrefs(data);
         })
-        .catch(() => {});
+        .catch((err) => console.error("[Settings] Notifications fetch failed:", err));
     }
   }, [user]);
 

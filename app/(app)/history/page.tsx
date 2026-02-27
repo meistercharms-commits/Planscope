@@ -45,7 +45,7 @@ export default function HistoryPage() {
           setPlans(data);
         }
       })
-      .catch(() => {})
+      .catch((err) => console.error("[History] Fetch failed:", err))
       .finally(() => setHistoryLoading(false));
   }, [user, loading]);
 

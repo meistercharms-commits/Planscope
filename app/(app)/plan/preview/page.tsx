@@ -15,25 +15,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Spinner from "@/components/ui/Spinner";
 import { getCategoryColors } from "@/lib/category-colors";
-
-interface Task {
-  id: string;
-  title: string;
-  section: string;
-  timeEstimate: string | null;
-  effort: string | null;
-  urgency: string | null;
-  category: string | null;
-  context: string | null;
-}
-
-interface PlanMeta {
-  headline: string;
-  burnout_alert: string | null;
-  reality_check: string;
-  real_talk: string | null;
-  next_week_preview: string;
-}
+import type { PlanTask, PlanMeta } from "@/types";
 
 interface PreviewPlan {
   mode: string;
@@ -41,7 +23,7 @@ interface PreviewPlan {
   weekEnd: string;
   status: string;
   planMeta: string | null;
-  tasks: Task[];
+  tasks: PlanTask[];
 }
 
 export default function PlanPreviewPage() {
@@ -348,7 +330,7 @@ function TaskPreviewCard({
   task,
   onFocusClick,
 }: {
-  task: Task;
+  task: PlanTask;
   onFocusClick: () => void;
 }) {
   const colors = getCategoryColors(task.category);
@@ -406,7 +388,7 @@ function TaskPreviewCard({
   );
 }
 
-function ParkedPreviewCard({ task }: { task: Task }) {
+function ParkedPreviewCard({ task }: { task: PlanTask }) {
   const contextParts = task.context?.split(" | ").filter(Boolean) || [];
   const reason = contextParts[0] || null;
   const validation = contextParts[1] || null;

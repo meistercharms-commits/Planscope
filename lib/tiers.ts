@@ -2,16 +2,27 @@ import { getUser, getMonthlyPlanCount as firestoreMonthlyPlanCount, getActiveWee
 import { Tier, TIER_LIMITS } from '@/types';
 
 const MAX_ACTIVE_TASKS = 7;
+const TIER_CACHE_TTL_MS = 60_000; // 1 minute
+const tierCache = new Map<string, { tier: Tier; expiresAt: number }>();
 
 /**
  * Get the user's current tier from the database.
  * Anonymous users are always 'free'.
+ * Results are cached for 60 seconds per user.
  */
 export async function getUserTier(userId: string): Promise<Tier> {
+  const cached = tierCache.get(userId);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.tier;
+  }
+
   const user = await getUser(userId);
   if (!user) return 'free';
   if (user.provider === 'anonymous') return 'free';
-  return (user.tier as Tier) || 'free';
+  const tier = (user.tier as Tier) || 'free';
+
+  tierCache.set(userId, { tier, expiresAt: Date.now() + TIER_CACHE_TTL_MS });
+  return tier;
 }
 
 /**
@@ -32,11 +43,12 @@ export async function canCreatePlan(userId: string): Promise<{
 }> {
   const tier = await getUserTier(userId);
   const limits = TIER_LIMITS[tier];
-  const count = await getMonthlyPlanCount(userId);
 
   if (limits.plansPerMonth === Infinity) {
     return { allowed: true, remaining: Infinity, limit: Infinity };
   }
+
+  const count = await getMonthlyPlanCount(userId);
 
   const remaining = Math.max(0, limits.plansPerMonth - count);
 

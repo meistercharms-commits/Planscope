@@ -18,7 +18,17 @@ import {
 import { auth as firebaseAuth } from "@/lib/firebase";
 import type { User } from "@/types";
 
-export function useAuth() {
+export function useAuth(): {
+  user: User | null;
+  loading: boolean;
+  signup: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
+  logout: () => Promise<void>;
+  ensureAnonymous: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+} {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -37,8 +47,8 @@ export function useAuth() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ idToken }),
         });
-      } catch {
-        // Session sync failed — will retry on next auth state change
+      } catch (err) {
+        console.error("[Auth] Session sync failed:", err);
       }
     }
   }, []);
@@ -63,24 +73,10 @@ export function useAuth() {
       async (firebaseUser) => {
         // Skip if completeAuth() is running — it handles session sync itself
         if (isAuthenticatingRef.current) return;
+        if (!isMounted) return;
 
         if (firebaseUser) {
-          // Sync session cookie
-          try {
-            const idToken = await firebaseUser.getIdToken();
-            const sessionRes = await fetch("/api/auth/session", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ idToken }),
-            });
-            if (!sessionRes.ok) {
-              const errData = await sessionRes.json().catch(() => ({}));
-              console.error("[Auth] Session sync failed:", sessionRes.status, errData);
-            }
-          } catch (err) {
-            console.error("[Auth] Session sync error:", err);
-          }
-
+          await syncSession();
           if (!isMounted) return;
 
           // Fetch user profile from Firestore via API
@@ -134,7 +130,14 @@ export function useAuth() {
       }
       const idToken = await currentUser.getIdToken();
 
-      const preview = JSON.parse(stored);
+      let preview;
+      try {
+        preview = JSON.parse(stored);
+      } catch {
+        console.error("[Auth] Corrupted preview in sessionStorage");
+        sessionStorage.removeItem("planscope_preview");
+        return null;
+      }
       const res = await fetch("/api/plans/save-preview", {
         method: "POST",
         headers: {

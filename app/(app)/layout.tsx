@@ -28,7 +28,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (!currentUser) return;
 
         const idToken = await currentUser.getIdToken();
-        const preview = JSON.parse(stored!);
+        let preview;
+        try {
+          preview = JSON.parse(stored!);
+        } catch {
+          console.error("[Layout] Corrupted preview in sessionStorage");
+          sessionStorage.removeItem("planscope_preview");
+          return;
+        }
         const res = await fetch("/api/plans/save-preview", {
           method: "POST",
           headers: {

@@ -20,12 +20,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify the ID token is valid and recent (within 5 minutes)
+    // Verify the ID token is valid and recent (within 15 minutes)
     const decoded = await adminAuth.verifyIdToken(idToken, true);
 
     // Only create session cookies for recently signed-in users
     const signInAge = Date.now() / 1000 - decoded.auth_time;
-    if (signInAge > 5 * 60) {
+    if (signInAge > 15 * 60) {
       return NextResponse.json(
         { error: "Token is too old. Please sign in again." },
         { status: 401 }

@@ -221,12 +221,14 @@ export async function deleteUserAndData(uid: string): Promise<void> {
   // Collect all refs to delete (plans + their tasks + user doc)
   const refs: FirebaseFirestore.DocumentReference[] = [];
 
-  for (const planDoc of plansSnap.docs) {
-    const tasksSnap = await planDoc.ref.collection("tasks").get();
-    for (const taskDoc of tasksSnap.docs) {
+  const taskSnapshots = await Promise.all(
+    plansSnap.docs.map((planDoc) => planDoc.ref.collection("tasks").get())
+  );
+  for (let i = 0; i < plansSnap.docs.length; i++) {
+    for (const taskDoc of taskSnapshots[i].docs) {
       refs.push(taskDoc.ref);
     }
-    refs.push(planDoc.ref);
+    refs.push(plansSnap.docs[i].ref);
   }
 
   refs.push(db.collection("users").doc(uid));
@@ -264,13 +266,13 @@ export async function getActivePlans(
     .orderBy("createdAt", "desc")
     .get();
 
-  const plans: PlanWithTasks[] = [];
-  for (const doc of snap.docs) {
-    const plan = docToPlan(doc.id, doc.data());
-    const tasks = await getTasksForPlan(doc.id);
-    plans.push({ ...plan, tasks });
-  }
-  return plans;
+  const taskResults = await Promise.all(
+    snap.docs.map((doc) => getTasksForPlan(doc.id))
+  );
+  return snap.docs.map((doc, i) => ({
+    ...docToPlan(doc.id, doc.data()),
+    tasks: taskResults[i],
+  }));
 }
 
 export async function getPlanHistory(
@@ -284,13 +286,13 @@ export async function getPlanHistory(
     .limit(limit)
     .get();
 
-  const plans: PlanWithTasks[] = [];
-  for (const doc of snap.docs) {
-    const plan = docToPlan(doc.id, doc.data());
-    const tasks = await getTasksForPlan(doc.id);
-    plans.push({ ...plan, tasks });
-  }
-  return plans;
+  const taskResults = await Promise.all(
+    snap.docs.map((doc) => getTasksForPlan(doc.id))
+  );
+  return snap.docs.map((doc, i) => ({
+    ...docToPlan(doc.id, doc.data()),
+    tasks: taskResults[i],
+  }));
 }
 
 export async function getPlan(
@@ -370,15 +372,20 @@ export async function createPlanWithTasks(input: {
   return planRef.id;
 }
 
+const ALLOWED_PLAN_UPDATE_FIELDS = ["status", "label"];
+
 export async function updatePlan(
   planId: string,
   data: Record<string, unknown>
 ): Promise<void> {
+  const safeData = Object.fromEntries(
+    Object.entries(data).filter(([k]) => ALLOWED_PLAN_UPDATE_FIELDS.includes(k))
+  );
   await db
     .collection("plans")
     .doc(planId)
     .update({
-      ...data,
+      ...safeData,
       updatedAt: FieldValue.serverTimestamp(),
     });
 }
@@ -485,18 +492,23 @@ export async function createTask(
   };
 }
 
+const ALLOWED_TASK_UPDATE_FIELDS = ["status", "completedAt", "title", "section", "timeEstimate"];
+
 export async function updateTask(
   planId: string,
   taskId: string,
   data: Record<string, unknown>
 ): Promise<Record<string, unknown> | null> {
+  const safeData = Object.fromEntries(
+    Object.entries(data).filter(([k]) => ALLOWED_TASK_UPDATE_FIELDS.includes(k))
+  );
   const taskRef = db
     .collection("plans")
     .doc(planId)
     .collection("tasks")
     .doc(taskId);
 
-  await taskRef.update(data);
+  await taskRef.update(safeData);
 
   // Re-fetch and return the updated task
   const snap = await taskRef.get();
@@ -603,12 +615,13 @@ export async function getUserWithAllPlans(userId: string): Promise<{
     .orderBy("createdAt", "desc")
     .get();
 
-  const plans: PlanWithTasks[] = [];
-  for (const doc of plansSnap.docs) {
-    const plan = docToPlan(doc.id, doc.data());
-    const tasks = await getTasksForPlan(doc.id);
-    plans.push({ ...plan, tasks });
-  }
+  const taskResults = await Promise.all(
+    plansSnap.docs.map((doc) => getTasksForPlan(doc.id))
+  );
+  const plans = plansSnap.docs.map((doc, i) => ({
+    ...docToPlan(doc.id, doc.data()),
+    tasks: taskResults[i],
+  }));
 
   return { user, plans };
 }
@@ -627,11 +640,11 @@ export async function getRecentPlansWithTasks(
     .limit(limit)
     .get();
 
-  const plans: PlanWithTasks[] = [];
-  for (const doc of snap.docs) {
-    const plan = docToPlan(doc.id, doc.data());
-    const tasks = await getTasksForPlan(doc.id);
-    plans.push({ ...plan, tasks });
-  }
-  return plans;
+  const taskResults = await Promise.all(
+    snap.docs.map((doc) => getTasksForPlan(doc.id))
+  );
+  return snap.docs.map((doc, i) => ({
+    ...docToPlan(doc.id, doc.data()),
+    tasks: taskResults[i],
+  }));
 }

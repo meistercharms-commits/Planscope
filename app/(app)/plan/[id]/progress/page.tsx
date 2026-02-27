@@ -19,24 +19,14 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/useAuth";
 import { getCategoryColors } from "@/lib/category-colors";
 import { triggerCelebration, scheduleNudges, cancelNudges } from "@/lib/notifications";
-
-interface Task {
-  id: string;
-  title: string;
-  section: string;
-  timeEstimate: string | null;
-  effort: string | null;
-  category: string | null;
-  context: string | null;
-  status: string;
-}
+import type { PlanTask } from "@/types";
 
 interface PlanData {
   id: string;
   mode: string;
   weekStart: string;
   weekEnd: string;
-  tasks: Task[];
+  tasks: PlanTask[];
 }
 
 const celebMessages = [
@@ -68,7 +58,7 @@ export default function PlanProgressPage({
   useEffect(() => {
     fetchPlan();
     // Reset nudge timers when user opens their plan (re-schedules from now)
-    cancelNudges(id).then(() => scheduleNudges(id)).catch(() => {});
+    cancelNudges(id).then(() => scheduleNudges(id)).catch((err) => console.error("[Progress] Nudge scheduling failed:", err));
   }, [id]);
 
   async function fetchPlan() {
@@ -84,10 +74,10 @@ export default function PlanProgressPage({
     }
   }
 
-  async function toggleTask(taskId: string, currentStatus: string) {
+  async function toggleTask(taskId: string, currentStatus: PlanTask["status"]) {
     if (!plan) return;
 
-    const newStatus = currentStatus === "done" ? "pending" : "done";
+    const newStatus: PlanTask["status"] = currentStatus === "done" ? "pending" : "done";
 
     // Optimistic update
     const updatedPlan = {
@@ -125,7 +115,7 @@ export default function PlanProgressPage({
         }
 
         showToast(msg);
-        triggerCelebration(doneCount, totalActive).catch(() => {});
+        triggerCelebration(doneCount, totalActive).catch((err) => console.error("[Progress] Celebration failed:", err));
       }
     } catch {
       // Revert on error
@@ -553,7 +543,7 @@ function TaskProgressCard({
   planId,
   userTier,
 }: {
-  task: Task;
+  task: PlanTask;
   onToggle: () => void;
   hidden: boolean;
   planId: string;

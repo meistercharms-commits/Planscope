@@ -14,27 +14,8 @@ import Modal from "@/components/ui/Modal";
 import Spinner from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import LearningsInsight from "@/components/ui/LearningsInsight";
-import type { LearningsSummary } from "@/types";
+import type { LearningsSummary, PlanTask, PlanMeta } from "@/types";
 import { getCategoryColors } from "@/lib/category-colors";
-
-interface Task {
-  id: string;
-  title: string;
-  section: string;
-  timeEstimate: string | null;
-  effort: string | null;
-  urgency: string | null;
-  category: string | null;
-  context: string | null;
-}
-
-interface PlanMeta {
-  headline: string;
-  burnout_alert: string | null;
-  reality_check: string;
-  real_talk: string | null;
-  next_week_preview: string;
-}
 
 interface PlanData {
   id: string;
@@ -43,7 +24,7 @@ interface PlanData {
   weekEnd: string;
   status: string;
   planMeta: string | null;
-  tasks: Task[];
+  tasks: PlanTask[];
 }
 
 export default function PlanReviewPage({
@@ -74,10 +55,10 @@ export default function PlanReviewPage({
             .then((data) => {
               if (data?.learnings) setLearnings(data.learnings);
             })
-            .catch(() => {});
+            .catch((err) => console.error("[PlanReview] Learnings fetch failed:", err));
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[PlanReview] Learn-enabled fetch failed:", err));
   }, [id]);
 
   async function fetchPlan() {
@@ -355,7 +336,7 @@ export default function PlanReviewPage({
   );
 }
 
-function TaskReviewCard({ task, showContext }: { task: Task; showContext?: boolean }) {
+function TaskReviewCard({ task, showContext }: { task: PlanTask; showContext?: boolean }) {
   const contextParts = task.context?.split(" | ").filter(Boolean) || [];
   const colors = getCategoryColors(task.category);
 
@@ -400,7 +381,7 @@ function TaskReviewCard({ task, showContext }: { task: Task; showContext?: boole
   );
 }
 
-function ParkedTaskCard({ task }: { task: Task }) {
+function ParkedTaskCard({ task }: { task: PlanTask }) {
   const contextParts = task.context?.split(" | ").filter(Boolean) || [];
   const reason = contextParts[0] || null;
   const validation = contextParts[1] || null;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthOrAnon } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getUser, updateUser } from "@/lib/firestore";
 import { DEFAULT_NOTIFICATION_PREFS, NotificationPrefs } from "@/types";
 
@@ -10,7 +10,10 @@ function mergePrefs(raw: Record<string, unknown> | null | undefined): Notificati
 
 export async function GET() {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     const user = await getUser(auth.userId);
 
     // Firestore stores notificationPrefs as a native map — no JSON.parse needed
@@ -22,7 +25,10 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     const body = await req.json();
 
     // Get existing prefs

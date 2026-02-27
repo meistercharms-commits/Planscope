@@ -10,17 +10,7 @@ import { useAuth } from "@/lib/useAuth";
 import { getCategoryColors } from "@/lib/category-colors";
 import { parseTimeEstimate, formatTime } from "@/lib/parse-time-estimate";
 import { scheduleFocusTimer, cancelFocusTimer } from "@/lib/notifications";
-
-interface Task {
-  id: string;
-  title: string;
-  section: string;
-  timeEstimate: string | null;
-  effort: string | null;
-  category: string | null;
-  context: string | null;
-  status: string;
-}
+import type { PlanTask } from "@/types";
 
 const TIME_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60];
 
@@ -34,7 +24,7 @@ export default function FocusModePage({
   const { showToast } = useToast();
   const { user } = useAuth();
 
-  const [task, setTask] = useState<Task | null>(null);
+  const [task, setTask] = useState<PlanTask | null>(null);
   const [loading, setLoading] = useState(true);
   const [presetMinutes, setPresetMinutes] = useState(0);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
@@ -57,7 +47,7 @@ export default function FocusModePage({
         const res = await fetch(`/api/plans/${id}`);
         if (!res.ok) throw new Error();
         const data = await res.json();
-        const foundTask = data.tasks.find((t: Task) => t.id === taskId);
+        const foundTask = data.tasks.find((t: PlanTask) => t.id === taskId);
 
         if (!foundTask || foundTask.status === "done") {
           router.push(`/plan/${id}/progress`);
@@ -111,7 +101,7 @@ export default function FocusModePage({
     setHasStarted(true);
     setIsRunning(true);
     // Schedule notification for when timer ends (in case user leaves app)
-    scheduleFocusTimer(taskId, seconds).catch(() => {});
+    scheduleFocusTimer(taskId, seconds).catch((err) => console.error("[Focus] Timer schedule failed:", err));
   }
 
   function togglePause() {
@@ -131,7 +121,7 @@ export default function FocusModePage({
   async function handleMarkDone() {
     setMarkingDone(true);
     // Cancel the scheduled "time's up" notification since user is done early or already here
-    cancelFocusTimer(taskId).catch(() => {});
+    cancelFocusTimer(taskId).catch((err) => console.error("[Focus] Timer cancel failed:", err));
     try {
       const res = await fetch(`/api/plans/${id}/tasks/${taskId}`, {
         method: "PATCH",

@@ -76,27 +76,3 @@ export async function getAuthOrAnon(): Promise<{
     throw err;
   }
 }
-
-// ─── Rate Limiting (in-memory, survives within serverless instance) ───
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-export function rateLimit(
-  key: string,
-  opts: { maxRequests: number; windowMs: number }
-): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + opts.windowMs });
-    return true;
-  }
-
-  if (entry.count >= opts.maxRequests) {
-    return false;
-  }
-
-  entry.count++;
-  return true;
-}

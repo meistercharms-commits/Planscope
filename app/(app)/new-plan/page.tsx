@@ -54,7 +54,7 @@ export default function NewPlanPage() {
       .then((data) => {
         if (data) setTierData(data);
       })
-      .catch(() => {});
+      .catch((err) => console.error("[NewPlan] Tier fetch failed:", err));
 
     // Fetch active plans for this week
     fetch("/api/plans/active")
@@ -62,7 +62,7 @@ export default function NewPlanPage() {
       .then((plans) => {
         if (plans && plans.length > 0) setActivePlan(plans[0]);
       })
-      .catch(() => {});
+      .catch((err) => console.error("[NewPlan] Active plans fetch failed:", err));
 
     // Fetch last plan for recurring option
     fetch("/api/plans/history")
@@ -70,7 +70,7 @@ export default function NewPlanPage() {
       .then((plans) => {
         if (plans && plans.length > 0) setLastPlan(plans[0]);
       })
-      .catch(() => {});
+      .catch((err) => console.error("[NewPlan] History fetch failed:", err));
   }, []);
 
   const canUseCopy = lastPlan && (tierData?.tier === "pro" || tierData?.tier === "pro_plus");
@@ -111,7 +111,7 @@ export default function NewPlanPage() {
         if (data.code === "PLAN_LIMIT_REACHED" || data.code === "ACTIVE_PLAN_LIMIT") {
           setError(data.error);
           if (data.code === "PLAN_LIMIT_REACHED") {
-            triggerUpgradeNotice(plansUsed ?? 0, plansLimit ?? 4).catch(() => {});
+            triggerUpgradeNotice(plansUsed ?? 0, plansLimit ?? 4).catch((err) => console.error("[NewPlan] Upgrade notice failed:", err));
           }
           setLoading(false);
           return;
@@ -130,7 +130,7 @@ export default function NewPlanPage() {
 
       const { id, taskCount } = data;
       // Schedule "plan ready" notification (fires 5 min from now if user leaves app)
-      schedulePlanReady(id, taskCount ?? 7).catch(() => {});
+      schedulePlanReady(id, taskCount ?? 7).catch((err) => console.error("[NewPlan] Plan ready notification failed:", err));
       router.push(`/plan/${id}`);
     } catch (err) {
       clearTimeout(timeoutId);

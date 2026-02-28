@@ -458,7 +458,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Temporary diagnostic — remove after identifying production issue
-    const debugHint = `[${err.name}${err.code ? `:${err.code}` : ""}${err.status ? ` (${err.status})` : ""}] ${(err.message || "unknown").substring(0, 200)}`;
+    // Extract the Firebase index creation URL if present
+    const fullMsg = err.message || "unknown";
+    const urlMatch = fullMsg.match(/https:\/\/console\.firebase[^\s]*/);
+    const debugHint = urlMatch
+      ? `Missing index — create it here: ${urlMatch[0]}`
+      : `[${err.name}${err.code ? `:${err.code}` : ""}] ${fullMsg.substring(0, 400)}`;
     return NextResponse.json(
       {
         error: `Something went wrong generating your plan. Please try again. (Debug: ${debugHint})`,

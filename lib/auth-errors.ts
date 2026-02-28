@@ -12,6 +12,11 @@ const friendlyMessages: Record<string, string> = {
   "auth/account-exists-with-different-credential": "An account already exists with this email using a different sign-in method.",
   "auth/credential-already-in-use": "This credential is already linked to another account.",
   "auth/requires-recent-login": "For security, please log out and log back in before making this change.",
+  "auth/operation-not-allowed": "This sign-in method is not enabled. Please contact support.",
+  "auth/popup-blocked": "Your browser blocked the sign-in popup. Please allow popups for this site.",
+  "auth/provider-already-linked": "This sign-in method is already linked to your account.",
+  "auth/internal-error": "Something went wrong on our end. Please try again.",
+  "auth/user-disabled": "This account has been disabled.",
 };
 
 export function humanizeAuthError(error: unknown): string {
@@ -26,5 +31,6 @@ export function humanizeAuthError(error: unknown): string {
     if (message.includes(key)) return friendly;
   }
 
+  console.error("[Auth] Unhandled auth error:", code || "no code", message);
   return "Something went wrong. Please try again.";
 }

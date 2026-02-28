@@ -33,6 +33,17 @@ export function getTargetWeek(): {
 }
 
 /**
+ * Return the Sunday-based week number (1–53) for a given date.
+ * Matches the app's Sunday–Saturday week model.
+ */
+export function getWeekNumber(date: Date): number {
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const dayOfYear = Math.floor((date.getTime() - yearStart.getTime()) / 86400000);
+  const yearStartDay = yearStart.getUTCDay(); // 0 = Sun
+  return Math.ceil((dayOfYear + yearStartDay + 1) / 7);
+}
+
+/**
  * Format week dates as "3 – 9 Mar" or "28 Feb – 6 Mar" (cross-month).
  */
 export function formatWeekLabel(weekStart: Date, weekEnd: Date): string {

@@ -174,7 +174,7 @@ export default function DashboardMultiPlan({
                       />
                     </div>
                   ) : (
-                    <p className="font-semibold text-text font-display flex-1">
+                    <p className="font-semibold text-text font-display flex-1 truncate">
                       {plan.label || "Plan"}
                     </p>
                   )}

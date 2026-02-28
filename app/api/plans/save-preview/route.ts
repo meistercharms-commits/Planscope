@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getAuthOrAnon } from "@/lib/auth";
-import { createPlanWithTasks } from "@/lib/firestore";
+import { createPlanWithTasks, getAllWeekPlanCount } from "@/lib/firestore";
 import { canCreatePlan, canCreateAdditionalPlan } from "@/lib/tiers";
+import { getWeekNumber } from "@/lib/week-dates";
 
 const VALID_TIME = ["low", "medium", "high"];
 const VALID_ENERGY = ["drained", "ok", "fired_up"];
@@ -155,10 +156,14 @@ export async function POST(req: NextRequest) {
       ? preview.originalDump.slice(0, 10000)
       : "";
 
+    // Auto-generate label
+    const previewPlanCount = await getAllWeekPlanCount(userId, weekStart);
+    const previewAutoLabel = `Week ${getWeekNumber(weekStart)} — Plan ${previewPlanCount + 1}`;
+
     const planId = await createPlanWithTasks({
       userId,
       mode,
-      label: null,
+      label: previewAutoLabel,
       weekStart,
       weekEnd,
       originalDump,

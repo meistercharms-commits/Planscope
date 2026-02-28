@@ -490,7 +490,7 @@ function TaskReviewCard({ task, showContext }: { task: PlanTask; showContext?: b
             backgroundColor: colors.border,
           }}
         />
-        <p className="font-medium text-text flex-1">{task.title}</p>
+        <p className="font-medium text-text flex-1 break-words line-clamp-2">{task.title}</p>
         <span
           className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: colors.badge, color: colors.badgeText }}
@@ -524,7 +524,7 @@ function ParkedTaskCard({ task }: { task: PlanTask }) {
       className="pl-3 border-l-2"
       style={{ borderLeftColor: colors.border + "60" }}
     >
-      <p className="text-sm text-text-secondary">
+      <p className="text-sm text-text-secondary break-words">
         {task.title}
         {task.category && (
           <span

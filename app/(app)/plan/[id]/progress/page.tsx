@@ -416,6 +416,16 @@ export default function PlanProgressPage({
           </p>
         </div>
       )}
+      {overallPercent === 100 && !isArchived && isOwner && (
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-4">
+          <Link
+            href="/new-plan"
+            className="block text-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Ready for a fresh plan? Start a new one →
+          </Link>
+        </div>
+      )}
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         {/* Archived banner */}
@@ -552,7 +562,7 @@ export default function PlanProgressPage({
                   {notThisWeek.map((task) => (
                     <div
                       key={task.id}
-                      className="text-sm text-text-secondary pl-2"
+                      className="text-sm text-text-secondary pl-2 break-words"
                     >
                       &bull; {task.title}
                     </div>
@@ -864,7 +874,7 @@ function TaskProgressCard({
                 </span>
               )}
               <p
-                className={`font-medium text-sm transition-all duration-200 ${
+                className={`font-medium text-sm transition-all duration-200 break-words line-clamp-2 ${
                   isDone
                     ? justCompleted
                       ? "animate-strikethrough text-text-secondary"

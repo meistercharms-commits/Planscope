@@ -534,7 +534,7 @@ export default function NewPlanPage() {
               type="submit"
               fullWidth
               size="lg"
-              disabled={!useCopy && dump.length < 20 && selectedParked.size === 0}
+              disabled={(!useCopy && dump.length < 20 && selectedParked.size === 0) || !timeAvailable || !energyLevel || !focusArea}
             >
               {useCopy ? "Copy & make my plan" : "Make me a plan"}
             </Button>

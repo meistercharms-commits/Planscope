@@ -221,7 +221,7 @@ export default function FocusModePage({
         </span>
 
         {/* Task title */}
-        <h2 className="text-xl font-bold text-text font-display text-center mb-1.5 max-w-md">
+        <h2 className="text-xl font-bold text-text font-display text-center mb-1.5 max-w-md break-words line-clamp-3">
           {task.title}
         </h2>
 

@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getAuthOrAnon } from "@/lib/auth";
 import { generateFullPlan } from "@/lib/llm";
-import { getUser, getPlan, createPlanWithTasks } from "@/lib/firestore";
+import { getUser, getPlan, createPlanWithTasks, getAllWeekPlanCount } from "@/lib/firestore";
 import { rateLimit } from "@/lib/rate-limit";
 import { canCreatePlan, canCreateAdditionalPlan, getUserTier, canUseRecurring } from "@/lib/tiers";
 import { PlanMeta } from "@/types";
 import { generateLearningSummary } from "@/lib/learnings";
-import { getTargetWeek } from "@/lib/week-dates";
+import { getTargetWeek, getWeekNumber } from "@/lib/week-dates";
 
 // Allow up to 60 seconds for this route (LLM calls take time)
 export const maxDuration = 60;
@@ -139,10 +139,14 @@ export async function POST(req: NextRequest) {
         ...notThisWeekTasks,
       ];
 
+      // Auto-generate label if user didn't provide one
+      const copyPlanCount = await getAllWeekPlanCount(auth.userId, weekStart);
+      const copyAutoLabel = label || `Week ${getWeekNumber(weekStart)} — Plan ${copyPlanCount + 1}`;
+
       const planId = await createPlanWithTasks({
         userId: auth.userId,
         mode: planMode,
-        label: label || null,
+        label: copyAutoLabel,
         weekStart,
         weekEnd,
         originalDump: `[Copied from plan ${copyFromPlanId}]`,
@@ -352,11 +356,15 @@ export async function POST(req: NextRequest) {
       })),
     ];
 
+    // Auto-generate label if user didn't provide one
+    const newPlanCount = await getAllWeekPlanCount(auth.userId, weekStart);
+    const newAutoLabel = label || `Week ${getWeekNumber(weekStart)} — Plan ${newPlanCount + 1}`;
+
     // Save plan to Firestore (batched write: plan doc + all task docs)
     const planId = await createPlanWithTasks({
       userId: auth.userId,
       mode: planMode,
-      label: label || null,
+      label: newAutoLabel,
       weekStart,
       weekEnd,
       originalDump: dump,

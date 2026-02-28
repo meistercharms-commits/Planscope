@@ -481,6 +481,19 @@ export async function getActiveWeekPlanCount(
   return snap.size;
 }
 
+export async function getAllWeekPlanCount(
+  userId: string,
+  weekStart: Date
+): Promise<number> {
+  const snap = await db
+    .collection("plans")
+    .where("userId", "==", userId)
+    .where("weekStart", "==", Timestamp.fromDate(weekStart))
+    .get();
+
+  return snap.size;
+}
+
 // ─── Sharing Operations ───
 
 export async function getSharedPlans(userId: string): Promise<PlanWithTasks[]> {

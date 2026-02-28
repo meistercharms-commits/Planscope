@@ -651,6 +651,7 @@ export default function PlanProgressPage({
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder="What needs doing?"
+                  maxLength={500}
                   className="flex-1 px-4 py-3 border border-transparent rounded-lg text-base bg-bg-subtle transition-all duration-200 focus:outline-none focus:bg-bg-card focus:border-border focus:ring-2 focus:ring-primary-light focus:shadow-sm"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") addTask();

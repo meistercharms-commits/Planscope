@@ -3,9 +3,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { getPlan, getPlanMembers, addPlanMember, getUserByEmail } from "@/lib/firestore";
 import { getUserTier, canSharePlans } from "@/lib/tiers";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidEmail } from "@/lib/validation";
 
 const MAX_MEMBERS = 3;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function GET(
   _req: NextRequest,
@@ -64,7 +64,7 @@ export async function POST(
 
     const body = await req.json();
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    if (!email || !EMAIL_RE.test(email)) {
+    if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 

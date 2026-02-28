@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUser, getUserByEmail, updateUser } from "@/lib/firestore";
+import { isValidEmail } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const trimmedEmail = email.trim().toLowerCase();
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedEmail) || trimmedEmail.length > 254) {
+    if (!isValidEmail(trimmedEmail)) {
       return NextResponse.json(
         { error: "Please enter a valid email address" },
         { status: 400 }

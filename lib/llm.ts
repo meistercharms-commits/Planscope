@@ -207,6 +207,8 @@ PARSE GUIDELINES:
 - Anxiety reduction: Completing removes mental burden
 - If health mentioned negatively → flag health_neglect_signals
 - Context switching: 3+ projects/clients → flag it
+- If the brain dump contains only 1-2 actionable items, set overall_overwhelm_level to 1-2 (not higher). Do not inflate emotional signals for simple dumps.
+- CONFLICT DETECTION: Check all parsed tasks for conflicts — mutually exclusive tasks (e.g. "finish project" vs "take a week off"), temporal impossibilities (two full-day tasks on the same day), or contradictory goals (e.g. "save money" vs "book holiday"). If found, set the notes field on BOTH conflicting tasks to "CONFLICT: [brief description]".
 
 SCORING GUIDELINES:
 Urgency: Real deadline 24hrs=95-100, 1wk=70-85, 2wks=40-60, none=10-30
@@ -350,6 +352,8 @@ SPECIAL CASES:
 - health_neglect signals: Include one health task explicitly.
 - context_switching >= 4: Group tasks by context.
 - overwhelm >= 8: Reduce count, explain capacity.
+- 1-2 parsed tasks: This is a simple dump, not overwhelm. Use a direct, lightweight headline (e.g. "One thing. Let's get it done."). Put all tasks in do_first — leave this_week as []. Keep reality_check to one short sentence. Set next_week_preview to "". Do NOT pad with filler or "overwhelmed" framing.
+- Tasks with "CONFLICT:" in notes: Pick the more urgent/realistic task for do_first, park the other in not_this_week with honest validation (e.g. "Both matter, but you can't do both this week"). Address the trade-off in reality_check. Never place two conflicting tasks in the same active section.
 
 VALIDATION RULES FOR "NOT THIS WEEK":
 Every parked item: "This matters. I'm not dismissing it. Here's why not now."
@@ -402,6 +406,11 @@ ${userLearnings.recurringIssues.length > 0 ? `- Recurring items: ${userLearnings
         validation: "This matters. We just ran out of space. It's next on the list.",
       });
     }
+  }
+
+  // For 1-2 tasks, force empty next_week_preview even if LLM ignored the instruction
+  if (parsedData.tasks.length <= 2) {
+    plan.next_week_preview = "";
   }
 
   return plan;

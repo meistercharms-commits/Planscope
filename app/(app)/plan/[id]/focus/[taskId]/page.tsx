@@ -339,29 +339,41 @@ export default function FocusModePage({
             Start
           </Button>
         ) : !isComplete ? (
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={togglePause}>
-              {isRunning ? (
-                <>
-                  <Pause size={16} className="mr-2" />
-                  Pause
-                </>
-              ) : (
-                <>
-                  <Play size={16} className="mr-2" />
-                  Resume
-                </>
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleMarkDone}
-              loading={markingDone}
+          <>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={togglePause}>
+                {isRunning ? (
+                  <>
+                    <Pause size={16} className="mr-2" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play size={16} className="mr-2" />
+                    Resume
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleMarkDone}
+                loading={markingDone}
+              >
+                <Check size={16} className="mr-2" />
+                Done early
+              </Button>
+            </div>
+            <button
+              onClick={() => {
+                cancelFocusTimer(taskId).catch(() => {});
+                focusTimer.clearTimer();
+                router.push(`/plan/${id}/progress`);
+              }}
+              className="text-xs text-text-secondary hover:text-text transition-colors mt-2 cursor-pointer"
             >
-              <Check size={16} className="mr-2" />
-              Done early
-            </Button>
-          </div>
+              Cancel
+            </button>
+          </>
         ) : (
           <div className="text-center space-y-4">
             <p className="text-lg font-display font-semibold text-primary">

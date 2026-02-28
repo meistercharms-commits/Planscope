@@ -13,7 +13,7 @@ export default function DashboardEmpty() {
       <EmptyState
         icon="/icons/no_plans.svg"
         title="Fresh start this week"
-        description="Write down what's on your mind — big or small. We'll sort it into a plan that actually feels doable."
+        description="Write down what's on your mind. We'll sort it into a plan that actually feels doable."
         actionLabel="Create a new plan"
         actionHref="/new-plan"
       />

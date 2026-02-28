@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthOrAnon } from "@/lib/auth";
 import { getPlan, updatePlan } from "@/lib/firestore";
+import { getUserTier } from "@/lib/tiers";
 
 export async function GET(
   _req: NextRequest,
@@ -41,9 +42,25 @@ export async function PATCH(
     }
 
     // Handle label update
-    if ("label" in body && !("status" in body)) {
+    if ("label" in body && !("status" in body) && !("colour" in body)) {
       const label = typeof body.label === "string" ? body.label.trim().slice(0, 50) : null;
       await updatePlan(id, { label: label || null });
+      const updated = await getPlan(id, auth.userId);
+      return NextResponse.json(updated);
+    }
+
+    // Handle colour update (Pro Plus only)
+    if ("colour" in body && !("status" in body)) {
+      const tier = await getUserTier(auth.userId);
+      if (tier !== "pro_plus") {
+        return NextResponse.json({ error: "Pro Plus feature" }, { status: 403 });
+      }
+      const validColours = ["work", "health", "home", "money", "life"];
+      const colour = body.colour;
+      if (colour !== null && !validColours.includes(colour)) {
+        return NextResponse.json({ error: "Invalid colour" }, { status: 400 });
+      }
+      await updatePlan(id, { colour: colour || null });
       const updated = await getPlan(id, auth.userId);
       return NextResponse.json(updated);
     }

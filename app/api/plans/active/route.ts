@@ -18,6 +18,7 @@ export async function GET() {
         return {
           id: plan.id,
           label: plan.label,
+          colour: plan.colour ?? null,
           mode: plan.mode,
           status: plan.status,
           weekStart: plan.weekStart,

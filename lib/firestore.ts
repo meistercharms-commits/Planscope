@@ -30,6 +30,7 @@ export interface PlanDoc {
   userId: string;
   mode: string;
   label: string | null;
+  colour?: string | null;
   weekStart: Date;
   weekEnd: Date;
   originalDump: string;
@@ -123,6 +124,7 @@ function docToPlan(
     userId: data.userId || "",
     mode: data.mode || "week",
     label: data.label || null,
+    colour: data.colour || null,
     weekStart: toDate(data.weekStart),
     weekEnd: toDate(data.weekEnd),
     originalDump: data.originalDump || "",
@@ -396,7 +398,7 @@ export async function createPlanWithTasks(input: {
   return planRef.id;
 }
 
-const ALLOWED_PLAN_UPDATE_FIELDS = ["status", "label"];
+const ALLOWED_PLAN_UPDATE_FIELDS = ["status", "label", "colour"];
 
 export async function updatePlan(
   planId: string,

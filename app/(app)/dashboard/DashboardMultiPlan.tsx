@@ -2,12 +2,38 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Palette } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+
+const PLAN_COLOURS = [
+  { key: "work", label: "Blue", className: "bg-cat-work" },
+  { key: "health", label: "Green", className: "bg-cat-health" },
+  { key: "home", label: "Brown", className: "bg-cat-home" },
+  { key: "money", label: "Purple", className: "bg-cat-money" },
+  { key: "life", label: "Orange", className: "bg-cat-life" },
+  { key: null, label: "Default", className: "bg-primary" },
+] as const;
+
+const COLOUR_BAR: Record<string, string> = {
+  work: "bg-cat-work",
+  health: "bg-cat-health",
+  home: "bg-cat-home",
+  money: "bg-cat-money",
+  life: "bg-cat-life",
+};
+
+const COLOUR_BORDER: Record<string, string> = {
+  work: "border-l-[3px] border-l-cat-work",
+  health: "border-l-[3px] border-l-cat-health",
+  home: "border-l-[3px] border-l-cat-home",
+  money: "border-l-[3px] border-l-cat-money",
+  life: "border-l-[3px] border-l-cat-life",
+};
 
 interface PlanSummary {
   id: string;
   label: string;
+  colour?: string | null;
   mode: string;
   status: string;
   totalTasks: number;
@@ -16,6 +42,7 @@ interface PlanSummary {
 
 export default function DashboardMultiPlan({
   plans: initialPlans,
+  tier,
 }: {
   plans: PlanSummary[];
   tier: string;
@@ -24,7 +51,9 @@ export default function DashboardMultiPlan({
   const [plans, setPlans] = useState(initialPlans);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [colourPickerId, setColourPickerId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isProPlus = tier === "pro_plus";
 
   useEffect(() => {
     if (editingId && inputRef.current) {
@@ -36,6 +65,7 @@ export default function DashboardMultiPlan({
   function startRename(planId: string, currentLabel: string) {
     setEditingId(planId);
     setEditValue(currentLabel);
+    setColourPickerId(null);
   }
 
   async function saveRename(planId: string) {
@@ -43,7 +73,6 @@ export default function DashboardMultiPlan({
     setEditingId(null);
     if (!trimmed) return;
 
-    // Optimistic update
     setPlans((prev) =>
       prev.map((p) => (p.id === planId ? { ...p, label: trimmed } : p))
     );
@@ -57,6 +86,25 @@ export default function DashboardMultiPlan({
     } catch {
       setPlans(initialPlans);
       showToast("Couldn't rename that plan. Try again.", "error");
+    }
+  }
+
+  async function saveColour(planId: string, colour: string | null) {
+    setColourPickerId(null);
+
+    setPlans((prev) =>
+      prev.map((p) => (p.id === planId ? { ...p, colour } : p))
+    );
+
+    try {
+      await fetch(`/api/plans/${planId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ colour }),
+      });
+    } catch {
+      setPlans(initialPlans);
+      showToast("Couldn't update colour. Try again.", "error");
     }
   }
 
@@ -77,6 +125,9 @@ export default function DashboardMultiPlan({
               ? Math.round((plan.completedTasks / plan.totalTasks) * 100)
               : 0;
           const isEditing = editingId === plan.id;
+          const showPicker = colourPickerId === plan.id;
+          const barClass = plan.colour && COLOUR_BAR[plan.colour] ? COLOUR_BAR[plan.colour] : "bg-primary";
+          const borderClass = plan.colour && COLOUR_BORDER[plan.colour] ? COLOUR_BORDER[plan.colour] : "";
 
           return (
             <div key={plan.id} className="relative">
@@ -86,7 +137,7 @@ export default function DashboardMultiPlan({
                     ? `/plan/${plan.id}`
                     : `/plan/${plan.id}/progress`
                 }
-                className="block bg-bg-card rounded-lg shadow-card p-4 hover:shadow-sm transition-all"
+                className={`block bg-bg-card rounded-lg shadow-card p-4 hover:shadow-sm transition-all ${borderClass}`}
               >
                 <div className="flex items-center justify-between mb-1">
                   {isEditing ? (
@@ -125,11 +176,49 @@ export default function DashboardMultiPlan({
                         <Pencil size={14} />
                       </button>
                     )}
+                    {isProPlus && !isEditing && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setColourPickerId(showPicker ? null : plan.id);
+                        }}
+                        className="p-1.5 -m-1 text-text-tertiary hover:text-text transition-colors cursor-pointer"
+                        aria-label="Change plan colour"
+                      >
+                        <Palette size={14} />
+                      </button>
+                    )}
                     <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-bg-subtle text-text-secondary">
                       {plan.mode === "today" ? "Today" : "This Week"}
                     </span>
                   </div>
                 </div>
+
+                {/* Colour picker */}
+                {showPicker && (
+                  <div
+                    className="flex items-center gap-2 mb-2 py-1.5"
+                    onClick={(e) => e.preventDefault()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-xs text-text-secondary mr-1">Colour:</span>
+                    {PLAN_COLOURS.map((c) => (
+                      <button
+                        key={c.key ?? "default"}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          saveColour(plan.id, c.key);
+                        }}
+                        className={`w-5 h-5 rounded-full ${c.className} transition-transform hover:scale-110 ${
+                          (plan.colour ?? null) === c.key ? "ring-2 ring-offset-2 ring-text/30" : ""
+                        }`}
+                        aria-label={`Set colour to ${c.label}`}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 <p className="text-xs text-text-secondary mb-3">
                   {plan.status === "review"
                     ? "Ready for review"
@@ -137,7 +226,7 @@ export default function DashboardMultiPlan({
                 </p>
                 <div className="h-1.5 bg-border rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                    className={`h-full ${barClass} rounded-full transition-all duration-500 ease-out`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>

@@ -710,8 +710,7 @@ export default function SettingsPage() {
                     price={billingCycle === "monthly" ? "£14.99/month" : "£149/year"}
                     tier="pro_plus"
                     current={false}
-                    features={["Plan everything, unlimited possibilities", "Sync across work, personal, side projects", "Spot patterns and bottlenecks fast with full plan history and completion data", "For people juggling it all"]}
-                    comingSoon={["Team plans \u2014 Turn solo planning into a shared workflow with up to 3 people"]}
+                    features={["Plan everything, unlimited possibilities", "Sync across work, personal, side projects", "Spot patterns and bottlenecks fast with full plan history and completion data", "Share plans with up to 3 people", "For people juggling it all"]}
                     onSelect={() => handleUpgrade(billingCycle === "monthly" ? (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_MONTHLY || "price_1T595K4kVPZipsrTHBNxYUoT") : (process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_PLUS_ANNUAL || "price_1T596r4kVPZipsrTF2oGtiiA"))}
                     loading={tierLoading}
                     billingToggle={

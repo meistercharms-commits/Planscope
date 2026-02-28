@@ -8,6 +8,7 @@ const tierCache = new Map<string, { tier: Tier; expiresAt: number }>();
 /**
  * Get the user's current tier from the database.
  * Anonymous users are always 'free'.
+ * Paid tiers require an active Stripe subscription — past_due/unpaid = free.
  * Results are cached for 60 seconds per user.
  */
 export async function getUserTier(userId: string): Promise<Tier> {
@@ -19,7 +20,13 @@ export async function getUserTier(userId: string): Promise<Tier> {
   const user = await getUser(userId);
   if (!user) return 'free';
   if (user.provider === 'anonymous') return 'free';
-  const tier = (user.tier as Tier) || 'free';
+
+  let tier = (user.tier as Tier) || 'free';
+
+  // Paid tiers require an active subscription — revoke if payment failed
+  if (tier !== 'free' && user.stripeSubscriptionStatus !== 'active') {
+    tier = 'free';
+  }
 
   tierCache.set(userId, { tier, expiresAt: Date.now() + TIER_CACHE_TTL_MS });
   return tier;

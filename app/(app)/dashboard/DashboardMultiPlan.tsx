@@ -86,11 +86,12 @@ export default function DashboardMultiPlan({
     );
 
     try {
-      await fetch(`/api/plans/${planId}`, {
+      const res = await fetch(`/api/plans/${planId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label: trimmed }),
       });
+      if (!res.ok) throw new Error();
     } catch {
       setPlans(initialPlans);
       showToast("Couldn't rename that plan. Try again.", "error");
@@ -105,11 +106,12 @@ export default function DashboardMultiPlan({
     );
 
     try {
-      await fetch(`/api/plans/${planId}`, {
+      const res = await fetch(`/api/plans/${planId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ colour }),
       });
+      if (!res.ok) throw new Error();
     } catch {
       setPlans(initialPlans);
       showToast("Couldn't update colour. Try again.", "error");

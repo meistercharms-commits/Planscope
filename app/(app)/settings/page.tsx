@@ -622,7 +622,7 @@ export default function SettingsPage() {
           ) : null}
 
           {/* Section 2: Subscription */}
-          <section className="bg-bg-card rounded-lg shadow-card p-5 sm:p-6">
+          <section className="bg-bg-card rounded-lg shadow-card ring-1 ring-primary/15 p-5 sm:p-6">
             <h2 className="text-lg font-semibold text-text font-display mb-4 flex items-center gap-2">
               <CreditCard size={20} className="text-primary" />
               Subscription

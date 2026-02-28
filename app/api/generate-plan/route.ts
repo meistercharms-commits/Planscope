@@ -88,6 +88,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for gibberish/emoji-only input (no letters in any script)
+    if (!copyFromPlanId && dump && !/\p{L}/u.test(dump)) {
+      return NextResponse.json(
+        {
+          error:
+            "Your brain dump doesn't contain any readable text. Try writing out what's on your mind — even a few words is enough.",
+        },
+        { status: 400 }
+      );
+    }
+
     const constraints = {
       time_available,
       energy_level,
@@ -211,7 +222,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "We couldn't find any tasks in your brain dump. Try breaking it into shorter sentences.",
+            "We couldn't find any actionable tasks in your brain dump. Try writing specific things you need to do — e.g. \"finish report\" or \"book dentist\".",
         },
         { status: 400 }
       );

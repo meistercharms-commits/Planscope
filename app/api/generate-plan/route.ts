@@ -394,11 +394,12 @@ export async function POST(req: NextRequest) {
   }
 
   } catch (e) {
-    const err = e as Error & { status?: number; error?: { type?: string } };
+    const err = e as Error & { status?: number; error?: { type?: string }; code?: string };
     console.error("Plan generation error:", {
       message: err.message,
       name: err.name,
       status: err.status,
+      code: err.code,
       errorType: err.error?.type,
       stack: err.stack?.substring(0, 500),
     });
@@ -456,8 +457,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Temporary diagnostic — remove after identifying production issue
     return NextResponse.json(
-      { error: "Something went wrong generating your plan. Please try again." },
+      {
+        error: "Something went wrong generating your plan. Please try again.",
+        _debug: {
+          errorName: err.name,
+          errorMessage: (err.message || "").substring(0, 300),
+          errorCode: err.code || null,
+          errorStatus: err.status || null,
+          errorType: err.error?.type || null,
+        },
+      },
       { status: 500 }
     );
   }

@@ -169,6 +169,10 @@ export default function NewPlanPage() {
 
       if (!res.ok) {
         const data = await res.json();
+        // Temporary diagnostic — log debug details if present
+        if (data._debug) {
+          console.error("[NewPlan] Server error debug:", data._debug);
+        }
         if (data.code === "PLAN_LIMIT_REACHED" || data.code === "ACTIVE_PLAN_LIMIT") {
           setError(data.error);
           if (data.code === "PLAN_LIMIT_REACHED") {

@@ -14,6 +14,7 @@ import {
   Archive,
   Target,
   Zap,
+  Users,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -24,10 +25,12 @@ import { getCategoryColors } from "@/lib/category-colors";
 import { triggerCelebration, scheduleNudges, cancelNudges } from "@/lib/notifications";
 import { SkeletonTaskCard } from "@/components/ui/Skeleton";
 import { parseTimeEstimate } from "@/lib/parse-time-estimate";
+import SharePlanModal from "@/components/plan/SharePlanModal";
 import type { PlanTask } from "@/types";
 
 interface PlanData {
   id: string;
+  userId: string;
   mode: string;
   status: string;
   weekStart: string;
@@ -61,6 +64,7 @@ export default function PlanProgressPage({
   const [addingTask, setAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Compute "UP NEXT" task early so the auto-expand hook stays above early returns
   const nextTaskId = (() => {
@@ -424,14 +428,27 @@ export default function PlanProgressPage({
 
         {/* Plan Header */}
         <div className="mb-6">
-          <h1 className="text-[28px] font-bold text-text font-display">
-            {plan.mode === "today"
-              ? "Today"
-              : `Week of ${weekStart.toLocaleDateString("en-GB", { month: "short", day: "numeric" })}`}
-          </h1>
-          <p className="text-sm text-text-secondary mt-1">
-            {totalActive} {totalActive === 1 ? "task" : "tasks"}
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-[28px] font-bold text-text font-display">
+                {plan.mode === "today"
+                  ? "Today"
+                  : `Week of ${weekStart.toLocaleDateString("en-GB", { month: "short", day: "numeric" })}`}
+              </h1>
+              <p className="text-sm text-text-secondary mt-1">
+                {totalActive} {totalActive === 1 ? "task" : "tasks"}
+              </p>
+            </div>
+            {user && user.tier === "pro_plus" && plan.userId === user.id && !isArchived && (
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-lg transition-colors cursor-pointer"
+                aria-label="Share plan"
+              >
+                <Users size={20} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Do First */}
@@ -702,6 +719,13 @@ export default function PlanProgressPage({
           </div>
         </div>
       </Modal>
+
+      {/* Share modal */}
+      <SharePlanModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        planId={id}
+      />
       </div>
     </div>
   );

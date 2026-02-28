@@ -38,8 +38,16 @@ export interface PlanDoc {
   constraints: Record<string, unknown> | null;
   planMeta: Record<string, unknown> | null;
   status: string;
+  sharedWithUserIds: string[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface MemberDoc {
+  userId: string;
+  email: string;
+  role: "editor";
+  addedAt: Date;
 }
 
 export interface TaskDoc {
@@ -132,6 +140,7 @@ function docToPlan(
     constraints: data.constraints || null,
     planMeta: data.planMeta || null,
     status: data.status || "active",
+    sharedWithUserIds: data.sharedWithUserIds || [],
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -214,21 +223,25 @@ export async function updateUser(
 }
 
 export async function deleteUserAndData(uid: string): Promise<void> {
-  // 1. Get all plans for this user
+  // 1. Get all plans owned by this user
   const plansSnap = await db
     .collection("plans")
     .where("userId", "==", uid)
     .get();
 
-  // Collect all refs to delete (plans + their tasks + user doc)
+  // Collect all refs to delete (plans + their tasks + members + user doc)
   const refs: FirebaseFirestore.DocumentReference[] = [];
 
-  const taskSnapshots = await Promise.all(
-    plansSnap.docs.map((planDoc) => planDoc.ref.collection("tasks").get())
-  );
+  const [taskSnapshots, memberSnapshots] = await Promise.all([
+    Promise.all(plansSnap.docs.map((planDoc) => planDoc.ref.collection("tasks").get())),
+    Promise.all(plansSnap.docs.map((planDoc) => planDoc.ref.collection("members").get())),
+  ]);
   for (let i = 0; i < plansSnap.docs.length; i++) {
     for (const taskDoc of taskSnapshots[i].docs) {
       refs.push(taskDoc.ref);
+    }
+    for (const memberDoc of memberSnapshots[i].docs) {
+      refs.push(memberDoc.ref);
     }
     refs.push(plansSnap.docs[i].ref);
   }
@@ -244,6 +257,16 @@ export async function deleteUserAndData(uid: string): Promise<void> {
       batch.delete(ref);
     }
     await batch.commit();
+  }
+
+  // 3. Remove this user from any plans shared with them
+  const sharedSnap = await db
+    .collection("plans")
+    .where("sharedWithUserIds", "array-contains", uid)
+    .get();
+
+  for (const planDoc of sharedSnap.docs) {
+    await removePlanMember(planDoc.id, uid);
   }
 }
 
@@ -334,7 +357,7 @@ export async function getPlan(
   if (!doc.exists) return null;
 
   const data = doc.data()!;
-  if (data.userId !== userId) return null;
+  if (data.userId !== userId && !(data.sharedWithUserIds || []).includes(userId)) return null;
 
   const plan = docToPlan(doc.id, data);
   const tasks = await getTasksForPlan(planId);
@@ -455,6 +478,102 @@ export async function getActiveWeekPlanCount(
     .get();
 
   return snap.size;
+}
+
+// ─── Sharing Operations ───
+
+export async function getSharedPlans(userId: string): Promise<PlanWithTasks[]> {
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const weekStart = new Date(now);
+  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+  weekStart.setUTCHours(0, 0, 0, 0);
+
+  const snap = await db
+    .collection("plans")
+    .where("sharedWithUserIds", "array-contains", userId)
+    .where("status", "in", ["active", "review"])
+    .where("weekStart", ">=", Timestamp.fromDate(weekStart))
+    .orderBy("weekStart")
+    .orderBy("createdAt", "desc")
+    .get();
+
+  const taskResults = await Promise.all(
+    snap.docs.map((doc) => getTasksForPlan(doc.id))
+  );
+  return snap.docs.map((doc, i) => ({
+    ...docToPlan(doc.id, doc.data()),
+    tasks: taskResults[i],
+  }));
+}
+
+export async function addPlanMember(
+  planId: string,
+  targetUserId: string,
+  email: string
+): Promise<void> {
+  const batch = db.batch();
+
+  // Add member doc
+  const memberRef = db
+    .collection("plans")
+    .doc(planId)
+    .collection("members")
+    .doc(targetUserId);
+  batch.set(memberRef, {
+    userId: targetUserId,
+    email,
+    role: "editor",
+    addedAt: FieldValue.serverTimestamp(),
+  });
+
+  // Add to sharedWithUserIds array
+  const planRef = db.collection("plans").doc(planId);
+  batch.update(planRef, {
+    sharedWithUserIds: FieldValue.arrayUnion(targetUserId),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  await batch.commit();
+}
+
+export async function removePlanMember(
+  planId: string,
+  targetUserId: string
+): Promise<void> {
+  const batch = db.batch();
+
+  // Remove member doc
+  const memberRef = db
+    .collection("plans")
+    .doc(planId)
+    .collection("members")
+    .doc(targetUserId);
+  batch.delete(memberRef);
+
+  // Remove from sharedWithUserIds array
+  const planRef = db.collection("plans").doc(planId);
+  batch.update(planRef, {
+    sharedWithUserIds: FieldValue.arrayRemove(targetUserId),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  await batch.commit();
+}
+
+export async function getPlanMembers(planId: string): Promise<MemberDoc[]> {
+  const snap = await db
+    .collection("plans")
+    .doc(planId)
+    .collection("members")
+    .get();
+
+  return snap.docs.map((doc) => ({
+    userId: doc.id,
+    email: doc.data().email || "",
+    role: doc.data().role || "editor",
+    addedAt: toDate(doc.data().addedAt),
+  }));
 }
 
 // ─── Task Operations ───

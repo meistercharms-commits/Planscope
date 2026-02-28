@@ -139,3 +139,7 @@ export function canViewHistory(tier: Tier): boolean {
 export function canUseRecurring(tier: Tier): boolean {
   return TIER_LIMITS[tier].recurring;
 }
+
+export function canSharePlans(tier: Tier): boolean {
+  return tier === 'pro_plus';
+}

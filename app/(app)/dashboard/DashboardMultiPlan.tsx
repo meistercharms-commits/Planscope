@@ -50,9 +50,11 @@ interface PlanSummary {
 
 export default function DashboardMultiPlan({
   plans: initialPlans,
+  sharedPlans = [],
   tier,
 }: {
   plans: PlanSummary[];
+  sharedPlans?: PlanSummary[];
   tier: string;
 }) {
   const { showToast } = useToast();
@@ -256,6 +258,60 @@ export default function DashboardMultiPlan({
           New plan for this week
         </Link>
       </div>
+
+      {/* Shared plans section */}
+      {sharedPlans.length > 0 && (
+        <>
+          <div className="mt-8 mb-4 flex items-center gap-2">
+            <div className="h-px bg-border flex-1" />
+            <span className="text-xs font-medium text-text-secondary uppercase tracking-wide px-2">
+              Shared with you
+            </span>
+            <div className="h-px bg-border flex-1" />
+          </div>
+          <div className="space-y-3">
+            {sharedPlans.map((plan) => {
+              const pct =
+                plan.totalTasks > 0
+                  ? Math.round((plan.completedTasks / plan.totalTasks) * 100)
+                  : 0;
+              const barClass = plan.colour && COLOUR_BAR[plan.colour] ? COLOUR_BAR[plan.colour] : "bg-primary";
+
+              return (
+                <Link
+                  key={plan.id}
+                  href={
+                    plan.status === "review"
+                      ? `/plan/${plan.id}`
+                      : `/plan/${plan.id}/progress`
+                  }
+                  className="block bg-bg-card rounded-lg shadow-card p-4 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold text-text font-display flex-1">
+                      {plan.label || "Shared plan"}
+                    </p>
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-bg-subtle text-text-secondary">
+                      {plan.mode === "today" ? "Today" : "This Week"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-secondary mb-3">
+                    {plan.status === "review"
+                      ? "Ready for review"
+                      : `${plan.completedTasks} of ${plan.totalTasks} done`}
+                  </p>
+                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${barClass} rounded-full transition-all duration-500 ease-out`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

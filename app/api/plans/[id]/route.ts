@@ -47,16 +47,24 @@ export async function PATCH(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
-    // Handle label update
+    const isOwner = plan.userId === auth.userId;
+
+    // Handle label update — owner only
     if ("label" in body && !("status" in body) && !("colour" in body)) {
+      if (!isOwner) {
+        return NextResponse.json({ error: "Only the plan owner can rename" }, { status: 403 });
+      }
       const label = typeof body.label === "string" ? body.label.trim().slice(0, 50) : null;
       await updatePlan(id, { label: label || null });
       const updated = await getPlan(id, auth.userId);
       return NextResponse.json(updated);
     }
 
-    // Handle colour update (Pro Plus only)
+    // Handle colour update — owner only, Pro Plus only
     if ("colour" in body && !("status" in body)) {
+      if (!isOwner) {
+        return NextResponse.json({ error: "Only the plan owner can change colour" }, { status: 403 });
+      }
       const tier = await getUserTier(auth.userId);
       if (tier !== "pro_plus") {
         return NextResponse.json({ error: "Pro Plus feature" }, { status: 403 });
@@ -77,6 +85,11 @@ export async function PATCH(
         { error: "Invalid status" },
         { status: 400 }
       );
+    }
+
+    // Archive is owner-only; shared users can accept (review → active)
+    if (body.status === "archived" && !isOwner) {
+      return NextResponse.json({ error: "Only the plan owner can archive" }, { status: 403 });
     }
 
     // Enforce valid state transitions

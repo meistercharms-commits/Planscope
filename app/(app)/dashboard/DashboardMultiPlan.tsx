@@ -123,14 +123,16 @@ export default function DashboardMultiPlan({
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
       <h1 className="text-[28px] font-bold text-text font-display mb-2">
-        Your plans this week
+        {plans.length > 0 ? "Your plans this week" : "Shared plans"}
       </h1>
-      <p className="text-sm text-text-secondary mb-6">
-        {plans.length} active plans. Pick what matters.
-      </p>
+      {plans.length > 0 && (
+        <p className="text-sm text-text-secondary mb-6">
+          {plans.length} active {plans.length === 1 ? "plan" : "plans"}. Pick what matters.
+        </p>
+      )}
 
       {/* Plan cards */}
-      <div className="space-y-3">
+      {plans.length > 0 && <div className="space-y-3">
         {plans.map((plan) => {
           const pct =
             plan.totalTasks > 0
@@ -247,7 +249,7 @@ export default function DashboardMultiPlan({
             </div>
           );
         })}
-      </div>
+      </div>}
 
       <div className="mt-6">
         <Link

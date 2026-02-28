@@ -401,6 +401,7 @@ export async function createPlanWithTasks(input: {
     constraints: input.constraints || null,
     planMeta: input.planMeta || null,
     status: input.status,
+    sharedWithUserIds: [],
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });

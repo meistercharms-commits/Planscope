@@ -315,6 +315,7 @@ export default function PlanProgressPage({
 
   if (!plan) return null;
 
+  const isOwner = user ? plan.userId === user.id : false;
   const isArchived = plan.status === "archived" || plan.status === "completed";
 
   const activeTasks = plan.tasks.filter(
@@ -674,19 +675,21 @@ export default function PlanProgressPage({
             </Button>
           )}
 
-          {/* Archive plan */}
-          <div className="pt-4 border-t border-border">
-            <button
-              onClick={() => setShowArchiveModal(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 text-sm text-text-secondary hover:text-text transition-colors cursor-pointer"
-            >
-              <Archive size={16} />
-              Archive this plan
-            </button>
-            <p className="text-xs text-text-tertiary text-center mt-1">
-              Moves this plan to your history so you can start fresh.
-            </p>
-          </div>
+          {/* Archive plan — owner only */}
+          {isOwner && (
+            <div className="pt-4 border-t border-border">
+              <button
+                onClick={() => setShowArchiveModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 text-sm text-text-secondary hover:text-text transition-colors cursor-pointer"
+              >
+                <Archive size={16} />
+                Archive this plan
+              </button>
+              <p className="text-xs text-text-tertiary text-center mt-1">
+                Moves this plan to your history so you can start fresh.
+              </p>
+            </div>
+          )}
         </div>}
 
       {/* Archive confirmation modal */}

@@ -379,6 +379,19 @@ ${userLearnings.recurringIssues.length > 0 ? `- Recurring items: ${userLearnings
   }
 
   // Enforce the hard cap on active tasks
+  // First, cap do_first if it exceeds the total limit on its own
+  if ((plan.do_first?.length || 0) > maxTasks) {
+    const doFirstOverflow = plan.do_first.splice(maxTasks);
+    for (const item of doFirstOverflow) {
+      plan.this_week.unshift({
+        title: item.title,
+        time_estimate: item.time_estimate,
+        category: "other",
+        notes: item.why || item.context || "",
+      });
+    }
+  }
+  // Then, cap total active tasks
   const totalActive = (plan.do_first?.length || 0) + (plan.this_week?.length || 0);
   if (totalActive > maxTasks) {
     const overflow = plan.this_week.splice(maxTasks - plan.do_first.length);

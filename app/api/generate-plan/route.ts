@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
     }
 
     // New plan: validate brain dump
-    if (!dump || dump.length < 20) {
+    if (!dump || dump.trim().length < 20) {
       return NextResponse.json(
         { error: "Please write a bit more so we can build a good plan" },
         { status: 400 }

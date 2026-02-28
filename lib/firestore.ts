@@ -265,11 +265,16 @@ export async function archiveStalePlans(userId: string): Promise<number> {
 
   if (snap.empty) return 0;
 
-  const batch = db.batch();
-  snap.docs.forEach((doc) => {
-    batch.update(doc.ref, { status: "archived", updatedAt: Timestamp.now() });
-  });
-  await batch.commit();
+  // Chunk into batches of 450 (Firestore limit is 500)
+  const BATCH_SIZE = 450;
+  for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+    const chunk = snap.docs.slice(i, i + BATCH_SIZE);
+    const batch = db.batch();
+    chunk.forEach((doc) => {
+      batch.update(doc.ref, { status: "archived", updatedAt: Timestamp.now() });
+    });
+    await batch.commit();
+  }
   return snap.size;
 }
 
@@ -420,8 +425,8 @@ export async function getMonthlyPlanCount(
   userId: string
 ): Promise<number> {
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   const snap = await db
     .collection("plans")

@@ -155,11 +155,13 @@ export default function PlanReviewPage({
   if (loading) return <Spinner statusMessages={["Loading your plan..."]} duration={5} />;
   if (!plan) return null;
 
-  // Parse plan metadata
+  // Parse plan metadata — may arrive as object (Firestore) or string (preview)
   let meta: PlanMeta | null = null;
   if (plan.planMeta) {
     try {
-      meta = JSON.parse(plan.planMeta);
+      meta = typeof plan.planMeta === "string"
+        ? JSON.parse(plan.planMeta)
+        : (plan.planMeta as unknown as PlanMeta);
     } catch {
       // graceful fallback
     }

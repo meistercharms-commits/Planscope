@@ -48,11 +48,13 @@ export default function PlanPreviewPage() {
 
   if (!plan) return <Spinner />;
 
-  // Parse plan metadata
+  // Parse plan metadata — may arrive as object (Firestore) or string (sessionStorage)
   let meta: PlanMeta | null = null;
   if (plan.planMeta) {
     try {
-      meta = JSON.parse(plan.planMeta);
+      meta = typeof plan.planMeta === "string"
+        ? JSON.parse(plan.planMeta)
+        : (plan.planMeta as unknown as PlanMeta);
     } catch {
       // graceful fallback
     }

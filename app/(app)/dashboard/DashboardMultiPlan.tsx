@@ -30,6 +30,14 @@ const COLOUR_BORDER: Record<string, string> = {
   life: "border-l-[3px] border-l-cat-life",
 };
 
+const COLOUR_BG: Record<string, string> = {
+  work: "bg-cat-work/8",
+  health: "bg-cat-health/8",
+  home: "bg-cat-home/8",
+  money: "bg-cat-money/8",
+  life: "bg-cat-life/8",
+};
+
 interface PlanSummary {
   id: string;
   label: string;
@@ -128,6 +136,7 @@ export default function DashboardMultiPlan({
           const showPicker = colourPickerId === plan.id;
           const barClass = plan.colour && COLOUR_BAR[plan.colour] ? COLOUR_BAR[plan.colour] : "bg-primary";
           const borderClass = plan.colour && COLOUR_BORDER[plan.colour] ? COLOUR_BORDER[plan.colour] : "";
+          const bgClass = plan.colour && COLOUR_BG[plan.colour] ? COLOUR_BG[plan.colour] : "bg-bg-card";
 
           return (
             <div key={plan.id} className="relative">
@@ -137,7 +146,7 @@ export default function DashboardMultiPlan({
                     ? `/plan/${plan.id}`
                     : `/plan/${plan.id}/progress`
                 }
-                className={`block bg-bg-card rounded-lg shadow-card p-4 hover:shadow-sm transition-all ${borderClass}`}
+                className={`block ${bgClass} rounded-lg shadow-card p-4 hover:shadow-sm transition-all ${borderClass}`}
               >
                 <div className="flex items-center justify-between mb-1">
                   {isEditing ? (

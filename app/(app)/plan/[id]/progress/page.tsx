@@ -827,25 +827,27 @@ function TaskProgressCard({
                 backgroundColor: isDone ? colors.border + "80" : colors.border,
               }}
             />
-            <p
-              className={`font-medium text-sm transition-all duration-200 flex-1 ${
-                isDone
-                  ? justCompleted
-                    ? "animate-strikethrough text-text-secondary"
-                    : "line-through text-text-secondary"
-                  : "text-text"
-              }`}
-            >
+            <div className="flex-1">
               {isNext && !isDone && !isArchived && (
                 <span
-                  className="text-[9px] font-bold uppercase tracking-widest mr-1.5 align-middle"
+                  className="block text-[9px] font-bold uppercase tracking-widest mb-0.5"
                   style={{ color: colors.border }}
                 >
                   Up next
                 </span>
               )}
-              {task.title}
-            </p>
+              <p
+                className={`font-medium text-sm transition-all duration-200 ${
+                  isDone
+                    ? justCompleted
+                      ? "animate-strikethrough text-text-secondary"
+                      : "line-through text-text-secondary"
+                    : "text-text"
+                }`}
+              >
+                {task.title}
+              </p>
+            </div>
             {!isDone && (
               <span
                 className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"

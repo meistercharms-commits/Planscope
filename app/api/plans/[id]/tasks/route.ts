@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthOrAnon } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getPlan, createTask } from "@/lib/firestore";
 import { canAddActiveTask } from "@/lib/tiers";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    if (!rateLimit(`tasks:${auth.userId}`, { maxRequests: 60, windowMs: 60_000 })) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
     const { id } = await params;
     const body = await req.json();
 

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthOrAnon } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getPlan, getTask, updateTask, deleteTask, promoteTaskAtomic } from "@/lib/firestore";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    if (!rateLimit(`tasks:${auth.userId}`, { maxRequests: 60, windowMs: 60_000 })) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     const { id, taskId } = await params;
     const body = await req.json();
@@ -75,7 +82,7 @@ export async function PATCH(
     if (body.title !== undefined) updateData.title = body.title;
     if (body.section !== undefined) updateData.section = body.section;
     if (body.timeEstimate !== undefined) {
-      if (body.timeEstimate !== null && typeof body.timeEstimate !== "string") {
+      if (body.timeEstimate !== null && (typeof body.timeEstimate !== "string" || body.timeEstimate.length > 100)) {
         return NextResponse.json({ error: "Invalid time estimate" }, { status: 400 });
       }
       updateData.timeEstimate = body.timeEstimate;
@@ -98,7 +105,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
     const { id, taskId } = await params;
 

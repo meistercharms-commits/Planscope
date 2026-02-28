@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthOrAnon } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getPlan, updatePlan } from "@/lib/firestore";
 import { getUserTier } from "@/lib/tiers";
 
@@ -8,7 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     const { id } = await params;
     const plan = await getPlan(id, auth.userId);
 
@@ -31,7 +34,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await getAuthOrAnon();
+    const auth = await getCurrentUser();
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     const { id } = await params;
     const body = await req.json();
 

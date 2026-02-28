@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Deny all direct client access.
+    // All Firestore operations go through the Firebase Admin SDK
+    // (server-side API routes), which bypasses these rules entirely.
+    // This is a defense-in-depth lockdown — even if someone initialises
+    // a client Firestore SDK with the public project config, they
+    // cannot read or write any data.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

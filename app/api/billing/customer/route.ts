@@ -49,13 +49,11 @@ export async function GET() {
       }
     }
 
-    // 4. Return subscription data
+    // 4. Return subscription data (only what the UI needs — no internal Stripe IDs)
     return NextResponse.json({
       tier: user.tier,
-      stripeCustomerId: user.stripeCustomerId,
       stripeSubscriptionId: user.stripeSubscriptionId,
       stripeSubscriptionStatus: user.stripeSubscriptionStatus,
-      stripePriceId: user.stripePriceId,
       stripeCurrentPeriodEnd: user.stripeCurrentPeriodEnd
         ? user.stripeCurrentPeriodEnd.toISOString()
         : null,

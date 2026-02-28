@@ -197,6 +197,7 @@ Return JSON with this exact structure:
 
 PARSE GUIDELINES:
 - Use British English spelling (organise, prioritise, colour, centre)
+- If the brain dump is in a language other than English, translate all task titles into British English. Preserve the original meaning.
 - effort: small = <30min, medium = 30min-2hrs, large = 2hrs+
 - urgency: high = deadline within 3 days or "asap"/"urgent", medium = this week, low = no deadline
 - deadline: only if explicitly mentioned. Infer dates from context.

@@ -440,6 +440,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Anthropic server error (500/502/503)
+    if (err.status && err.status >= 500) {
+      return NextResponse.json(
+        { error: "Our AI service is temporarily unavailable. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
+
+    // LLM returned invalid JSON
+    if (message.includes("invalid JSON")) {
+      return NextResponse.json(
+        { error: "Plan generation hit a hiccup. Please try again." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Something went wrong generating your plan. Please try again." },
       { status: 500 }

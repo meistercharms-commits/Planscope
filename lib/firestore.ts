@@ -265,9 +265,9 @@ export async function deleteUserAndData(uid: string): Promise<void> {
     .where("sharedWithUserIds", "array-contains", uid)
     .get();
 
-  for (const planDoc of sharedSnap.docs) {
-    await removePlanMember(planDoc.id, uid);
-  }
+  await Promise.allSettled(
+    sharedSnap.docs.map((planDoc) => removePlanMember(planDoc.id, uid))
+  );
 }
 
 // ─── Plan Operations ───

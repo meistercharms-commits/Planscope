@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getPlan, getPlanMembers, addPlanMember, getUserByEmail } from "@/lib/firestore";
 import { getUserTier, canSharePlans } from "@/lib/tiers";
+import { rateLimit } from "@/lib/rate-limit";
 
 const MAX_MEMBERS = 3;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function GET(
   _req: NextRequest,
@@ -37,6 +39,12 @@ export async function POST(
     if (!auth) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    // Rate limit: 10 share invites per hour per user
+    if (!rateLimit(`share:${auth.userId}`, { maxRequests: 10, windowMs: 60 * 60 * 1000 })) {
+      return NextResponse.json({ error: "Too many share requests. Try again later." }, { status: 429 });
+    }
+
     const { id } = await params;
     const plan = await getPlan(id, auth.userId);
     if (!plan) {
@@ -56,7 +64,7 @@ export async function POST(
 
     const body = await req.json();
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    if (!email || !email.includes("@")) {
+    if (!email || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 

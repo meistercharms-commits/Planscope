@@ -53,12 +53,14 @@ export interface Plan {
   userId: string;
   mode: string;
   label: string | null;
+  colour?: string | null;
   weekStart: string;
   weekEnd: string;
   originalDump: string;
   parsedDump: ParsedDump | null;
   constraints: UserConstraints | null;
   status: string;
+  sharedWithUserIds?: string[];
   createdAt: string;
   updatedAt: string;
   tasks: PlanTask[];

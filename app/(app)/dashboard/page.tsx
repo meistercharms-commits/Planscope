@@ -57,6 +57,7 @@ export default async function DashboardPage() {
     return {
       id: plan.id,
       label: plan.label || "Plan",
+      colour: plan.colour ?? null,
       mode: plan.mode,
       status: plan.status,
       totalTasks: active.length,

@@ -15,12 +15,15 @@ interface SpinnerProps {
   statusMessages?: string[];
   /** Expected duration in seconds — controls progress speed */
   duration?: number;
+  /** Persistent subtitle shown below status messages (e.g. week dates) */
+  subtitle?: string;
   onCancel?: () => void;
 }
 
 export default function Spinner({
   statusMessages = defaultMessages,
   duration = 40,
+  subtitle,
   onCancel,
 }: SpinnerProps) {
   const [progress, setProgress] = useState(0);
@@ -61,6 +64,9 @@ export default function Spinner({
         <p className="text-base font-medium text-text font-display min-h-[1.5em]">
           {statusMessages[messageIndex]}
         </p>
+        {subtitle && (
+          <p className="text-sm text-text-secondary">{subtitle}</p>
+        )}
         <p className="text-xs text-text-tertiary">
           This usually takes 30–40 seconds
         </p>

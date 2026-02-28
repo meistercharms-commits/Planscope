@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/useAuth";
 import { Tier } from "@/types";
 import { schedulePlanReady, triggerUpgradeNotice } from "@/lib/notifications";
 import { useSpeechToText } from "@/lib/useSpeechToText";
+import { getTargetWeek, formatWeekLabel } from "@/lib/week-dates";
 
 interface TierData {
   tier: Tier;
@@ -169,10 +170,6 @@ export default function NewPlanPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        // Temporary diagnostic — log debug details if present
-        if (data._debug) {
-          console.error("[NewPlan] Server error debug:", data._debug);
-        }
         if (data.code === "PLAN_LIMIT_REACHED" || data.code === "ACTIVE_PLAN_LIMIT") {
           setError(data.error);
           if (data.code === "PLAN_LIMIT_REACHED") {
@@ -209,11 +206,16 @@ export default function NewPlanPage() {
   }
 
   if (loading) {
-    return <Spinner onCancel={() => {
-      abortRef.current?.abort();
-      abortRef.current = null;
-      setLoading(false);
-    }} />;
+    const { weekStart, weekEnd } = getTargetWeek();
+    const weekLabel = formatWeekLabel(weekStart, weekEnd);
+    return <Spinner
+      subtitle={`Week of ${weekLabel}`}
+      onCancel={() => {
+        abortRef.current?.abort();
+        abortRef.current = null;
+        setLoading(false);
+      }}
+    />;
   }
 
   // Plan limit reached

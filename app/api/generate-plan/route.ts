@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { canCreatePlan, canCreateAdditionalPlan, getUserTier, canUseRecurring } from "@/lib/tiers";
 import { PlanMeta } from "@/types";
 import { generateLearningSummary } from "@/lib/learnings";
+import { getTargetWeek } from "@/lib/week-dates";
 
 // Allow up to 60 seconds for this route (LLM calls take time)
 export const maxDuration = 60;
@@ -119,14 +120,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Source plan not found" }, { status: 404 });
       }
 
-      // Copy tasks directly from source plan (UTC for consistent server-side behaviour)
-      const now = new Date();
-      const dayOfWeek = now.getUTCDay();
-      const weekStart = new Date(now);
-      weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-      weekStart.setUTCHours(0, 0, 0, 0);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+      // Copy tasks — shifts to next week on Saturday
+      const { weekStart, weekEnd } = getTargetWeek();
 
       // Enforce 7-item active cap: move excess this_week tasks to not_this_week
       const doFirstTasks = sourcePlan.tasks.filter(t => t.section === "do_first");
@@ -230,13 +225,7 @@ export async function POST(req: NextRequest) {
         next_week_preview: plan.next_week_preview,
       };
 
-      const now = new Date();
-      const dayOfWeek = now.getUTCDay();
-      const anonWeekStart = new Date(now);
-      anonWeekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-      anonWeekStart.setUTCHours(0, 0, 0, 0);
-      const anonWeekEnd = new Date(anonWeekStart);
-      anonWeekEnd.setUTCDate(anonWeekStart.getUTCDate() + 6);
+      const { weekStart: anonWeekStart, weekEnd: anonWeekEnd } = getTargetWeek();
 
       const anonTasks = [
         ...(plan.do_first || []).map((task: { title: string; time_estimate?: string; why?: string; context?: string }, i: number) => ({
@@ -302,14 +291,8 @@ export async function POST(req: NextRequest) {
       next_week_preview: plan.next_week_preview,
     };
 
-    // Calculate week dates (UTC for consistent server-side behaviour)
-    const now = new Date();
-    const dayOfWeek = now.getUTCDay();
-    const weekStart = new Date(now);
-    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-    weekStart.setUTCHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+    // Calculate week dates — shifts to next week on Saturday
+    const { weekStart, weekEnd } = getTargetWeek();
 
     // Re-check plan limit right before saving (closes race window from LLM delay)
     const recheck = await canCreatePlan(auth.userId);
@@ -457,17 +440,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Temporary diagnostic — remove after identifying production issue
-    // Extract the Firebase index creation URL if present
-    const fullMsg = err.message || "unknown";
-    const urlMatch = fullMsg.match(/https:\/\/console\.firebase[^\s]*/);
-    const debugHint = urlMatch
-      ? `Missing index — create it here: ${urlMatch[0]}`
-      : `[${err.name}${err.code ? `:${err.code}` : ""}] ${fullMsg.substring(0, 400)}`;
     return NextResponse.json(
-      {
-        error: `Something went wrong generating your plan. Please try again. (Debug: ${debugHint})`,
-      },
+      { error: "Something went wrong generating your plan. Please try again." },
       { status: 500 }
     );
   }

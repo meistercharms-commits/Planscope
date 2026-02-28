@@ -458,16 +458,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Temporary diagnostic — remove after identifying production issue
+    const debugHint = `[${err.name}${err.code ? `:${err.code}` : ""}${err.status ? ` (${err.status})` : ""}] ${(err.message || "unknown").substring(0, 200)}`;
     return NextResponse.json(
       {
-        error: "Something went wrong generating your plan. Please try again.",
-        _debug: {
-          errorName: err.name,
-          errorMessage: (err.message || "").substring(0, 300),
-          errorCode: err.code || null,
-          errorStatus: err.status || null,
-          errorType: err.error?.type || null,
-        },
+        error: `Something went wrong generating your plan. Please try again. (Debug: ${debugHint})`,
       },
       { status: 500 }
     );

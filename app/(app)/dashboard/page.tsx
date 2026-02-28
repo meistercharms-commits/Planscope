@@ -15,21 +15,18 @@ export default async function DashboardPage() {
 
   const auth = { userId: loggedIn.userId };
 
-  const tier = await getUserTier(auth.userId);
+  // Fire-and-forget: archive stale plans (housekeeping, don't block page load)
+  archiveStalePlans(auth.userId).catch(() => {});
 
-  // Archive plans from past weeks (non-critical — fail silently)
+  // Run tier + active plans in parallel (each is ~50-150ms Firestore round-trip)
+  let tier, activePlans;
   try {
-    await archiveStalePlans(auth.userId);
+    [tier, activePlans] = await Promise.all([
+      getUserTier(auth.userId),
+      getActivePlans(auth.userId),
+    ]);
   } catch (e) {
-    // Firestore composite index may still be building — skip archiving
-    console.error("Dashboard: auto-archive failed (non-critical):", (e as Error).message);
-  }
-
-  let activePlans;
-  try {
-    activePlans = await getActivePlans(auth.userId);
-  } catch (e) {
-    console.error("Dashboard: failed to fetch active plans:", (e as Error).message);
+    console.error("Dashboard: failed to load:", (e as Error).message);
     return <DashboardEmpty />;
   }
 

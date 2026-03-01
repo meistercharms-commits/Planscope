@@ -74,7 +74,7 @@ export default function PlanPreviewPage() {
   const dateRange = `${formatDate(weekStart)} \u2013 ${formatDate(weekEnd)}`;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
       {/* Headline + Header */}
       <div className="animate-fade-in mb-6">
         {meta?.headline ? (

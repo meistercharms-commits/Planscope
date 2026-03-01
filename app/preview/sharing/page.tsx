@@ -336,6 +336,24 @@ function MockTaskCard({
           </div>
         </div>
         <div className="flex-1 min-w-0">
+          {/* Badges row — above title */}
+          {!isDone && (
+            <div className="flex items-center gap-1.5 mb-1">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                style={{ backgroundColor: colors.badge, color: colors.badgeText }}
+              >
+                {colors.label}
+              </span>
+              {isQuickWin && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
+                  <Zap size={10} className="fill-current" />
+                  Quick win
+                </span>
+              )}
+            </div>
+          )}
+          {/* Icon + title row */}
           <div className="flex items-center gap-2">
             <span
               className="w-4 h-4 flex-shrink-0 inline-block"
@@ -356,20 +374,6 @@ function MockTaskCard({
             >
               {title}
             </p>
-            {!isDone && (
-              <span
-                className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: colors.badge, color: colors.badgeText }}
-              >
-                {colors.label}
-              </span>
-            )}
-            {isQuickWin && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 bg-accent/10 text-accent">
-                <Zap size={10} className="fill-current" />
-                Quick win
-              </span>
-            )}
           </div>
         </div>
         {!isDone && (

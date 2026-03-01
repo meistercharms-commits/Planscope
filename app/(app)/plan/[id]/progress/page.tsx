@@ -302,7 +302,7 @@ export default function PlanProgressPage({
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="space-y-3">
           <SkeletonTaskCard />
           <SkeletonTaskCard />
@@ -410,14 +410,14 @@ export default function PlanProgressPage({
       {/* Progress Bar */}
       <ProgressBar done={doneCount} total={totalActive} />
       {encouragement && (
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+        <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6">
           <p className="text-xs text-text-secondary text-center pt-2 italic">
             {encouragement}
           </p>
         </div>
       )}
       {overallPercent === 100 && !isArchived && isOwner && (
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-4">
+        <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 pt-4">
           <Link
             href="/new-plan"
             className="block text-center text-sm font-medium text-primary hover:text-primary/80 transition-colors"
@@ -427,7 +427,7 @@ export default function PlanProgressPage({
         </div>
       )}
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
         {/* Archived banner */}
         {isArchived && (
           <div className="bg-bg-subtle rounded-lg p-3 mb-4 text-center">
@@ -852,6 +852,24 @@ function TaskProgressCard({
 
         {/* Title row */}
         <div className="flex-1 min-w-0">
+          {/* Badges row — above title */}
+          {!isDone && (
+            <div className="flex items-center gap-1.5 mb-1">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                style={{ backgroundColor: colors.badge, color: colors.badgeText }}
+              >
+                {colors.label}
+              </span>
+              {isQuickWin && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">
+                  <Zap size={10} className="fill-current" />
+                  Quick win
+                </span>
+              )}
+            </div>
+          )}
+          {/* Icon + title row */}
           <div className="flex items-center gap-2">
             <span
               className="w-4 h-4 flex-shrink-0 inline-block"
@@ -886,20 +904,6 @@ function TaskProgressCard({
                 {task.title}
               </p>
             </div>
-            {!isDone && (
-              <span
-                className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: colors.badge, color: colors.badgeText }}
-              >
-                {colors.label}
-              </span>
-            )}
-            {isQuickWin && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 bg-accent/10 text-accent">
-                <Zap size={10} className="fill-current" />
-                Quick win
-              </span>
-            )}
           </div>
         </div>
 

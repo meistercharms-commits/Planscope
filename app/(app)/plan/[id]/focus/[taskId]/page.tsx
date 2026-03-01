@@ -33,6 +33,8 @@ export default function FocusModePage({
   const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [markingDone, setMarkingDone] = useState(false);
   const [showSwitchPrompt, setShowSwitchPrompt] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
+  const [customInput, setCustomInput] = useState("");
 
   const isFree = !user || user.tier === "free";
 
@@ -311,6 +313,43 @@ export default function FocusModePage({
                   {mins} min
                 </button>
               ))}
+            </div>
+            {/* Custom timer option */}
+            <div className="mt-3">
+              {!customMode ? (
+                <button
+                  onClick={() => setCustomMode(true)}
+                  className="text-xs text-text-secondary hover:text-text transition-colors cursor-pointer"
+                >
+                  or set a custom time
+                </button>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                    placeholder="mins"
+                    className="w-20 px-3 py-2 text-sm text-center border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => {
+                      const mins = parseInt(customInput, 10);
+                      if (mins >= 1 && mins <= 180) {
+                        selectTime(mins);
+                        setCustomMode(false);
+                      }
+                    }}
+                    disabled={!customInput || parseInt(customInput, 10) < 1 || parseInt(customInput, 10) > 180}
+                    className="px-3 py-2 text-sm font-medium rounded-lg bg-primary text-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Set
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

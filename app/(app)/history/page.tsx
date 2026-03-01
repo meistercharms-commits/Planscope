@@ -52,7 +52,7 @@ export default function HistoryPage() {
 
   if (loading || historyLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="space-y-4">
           <SkeletonCard lines={2} />
           <SkeletonCard lines={2} />
@@ -65,7 +65,7 @@ export default function HistoryPage() {
   // Not logged in — show login prompt + upsell
   if (!user) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
         <h1 className="text-[28px] font-bold text-text font-display mb-2">
           Plan History
         </h1>
@@ -139,7 +139,7 @@ export default function HistoryPage() {
   // Logged in but tier doesn't support history
   if (tierError) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
         <h1 className="text-[28px] font-bold text-text font-display mb-2">
           Plan History
         </h1>
@@ -218,7 +218,7 @@ export default function HistoryPage() {
   const bestWeek = totalPlans > 0 ? Math.max(...plans.map(p => p.completionRate)) : 0;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+    <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
       <h1 className="text-[28px] font-bold text-text font-display mb-2">
         Plan History
       </h1>

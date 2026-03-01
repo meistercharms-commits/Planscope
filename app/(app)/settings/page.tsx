@@ -283,7 +283,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="space-y-6">
           <SkeletonCard lines={3} />
           <SkeletonCard lines={4} />
@@ -407,7 +407,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="animate-fade-in">
         <h1 className="text-[28px] font-bold text-text font-display mb-2">
           Profile & Settings

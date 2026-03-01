@@ -221,7 +221,7 @@ export default function NewPlanPage() {
   // Plan limit reached
   if (tierData && plansRemaining !== null && plansRemaining !== undefined && plansRemaining <= 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <div className="animate-fade-in text-center py-12">
           <h1 className="text-[28px] font-bold text-text font-display mb-2">
             You&apos;ve used all {plansLimit} plans this month
@@ -256,7 +256,7 @@ export default function NewPlanPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="animate-fade-in">
         {/* Active plan warning for Free/Pro */}
         {activePlan && tierData && tierData.tier !== "pro_plus" && (

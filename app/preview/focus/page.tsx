@@ -192,6 +192,11 @@ export default function FocusPreviewPage() {
                 </button>
               ))}
             </div>
+            <div className="mt-3">
+              <span className="text-xs text-text-secondary">
+                or set a custom time
+              </span>
+            </div>
           </div>
         )}
 

@@ -70,12 +70,12 @@ export default function PlanReviewPreviewPage() {
         >
           {thisWeekOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           <img src="/icons/this_week.svg" alt="" className="w-5 h-5" />
-          This Week (7 tasks)
+          This Week (3 tasks)
         </button>
 
         {thisWeekOpen && (<div>
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-text mb-2 capitalize">work (4)</h3>
+          <h3 className="text-sm font-medium text-text mb-2 capitalize">work (2)</h3>
           <div className="space-y-3">
             <div className="bg-bg-card rounded-lg p-4 shadow-card">
               <div className="flex items-center gap-2 mb-1">
@@ -95,7 +95,7 @@ export default function PlanReviewPreviewPage() {
         </div>
 
         <div className="mb-4">
-          <h3 className="text-sm font-medium text-text mb-2 capitalize">health (2)</h3>
+          <h3 className="text-sm font-medium text-text mb-2 capitalize">health (1)</h3>
           <div className="space-y-3">
             <div className="bg-bg-card rounded-lg p-4 shadow-card">
               <div className="flex items-center gap-2 mb-1">
@@ -131,7 +131,7 @@ export default function PlanReviewPreviewPage() {
               • Deep dive into new tech
             </div>
             <div className="text-sm text-text-secondary pl-2">
-              • Reorganize home office
+              • Reorganise home office
             </div>
           </div>
         </div>

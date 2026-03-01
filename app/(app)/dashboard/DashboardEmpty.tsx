@@ -2,7 +2,7 @@ import EmptyState from "@/components/ui/EmptyState";
 
 export default function DashboardEmpty() {
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+    <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
       <h1 className="text-[28px] font-bold text-text font-display mb-2">
         My Plans
       </h1>
